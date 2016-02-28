@@ -1,0 +1,2 @@
+# gosync
+go sync server
