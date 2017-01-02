@@ -14,7 +14,7 @@ import (
 )
 
 var wgetChan = make(chan int)
-var playChan = make(chan int64)
+var playChan = make(chan uint64)
 
 func Get(url string) []byte {
 	response, _ := http.Get(url)
@@ -23,16 +23,16 @@ func Get(url string) []byte {
 	return body
 }
 
-func WgetDownload(url string, saveas string, size int64, hash string) {
+func WgetDownload(url string, saveas string, size uint64, hash string) {
 	startTime := time.Now()
 	fmt.Println(url)
-	var thread int64 = 5
-	var last int64 = thread - 1
+	var thread uint64 = 5
+	var last uint64 = thread - 1
 	var thunkSize = size / thread
-	var start int64 = 0
+	var start uint64 = 0
 	fmt.Println(size)
 	fmt.Println(thunkSize)
-	var i int64
+	var i uint64
 	for i = 0; i < thread; i++ {
 		partName := saveas + ".part" + strconv.Itoa(int(i))
 		if i == last {
@@ -42,7 +42,7 @@ func WgetDownload(url string, saveas string, size int64, hash string) {
 		}
 		start = start + thunkSize
 	}
-	var j int64
+	var j uint64
 	for j = 0; j < thread; j++ {
 		<-wgetChan
 	}
@@ -53,7 +53,7 @@ func WgetDownload(url string, saveas string, size int64, hash string) {
 
 }
 
-func startChunkDownload(url string, saveas string, start int64, end int64) {
+func startChunkDownload(url string, saveas string, start uint64, end uint64) {
 	fmt.Println("\n")
 	fmt.Printf("%s %d %d ", saveas, start, end)
 	fmt.Println("\n")
@@ -93,21 +93,21 @@ func Post() {
 
 // WriteCounter counts the number of bytes written to it.
 type WriteCounter struct {
-	Total int64 // Total # of bytes written
-	Size  int64
+	Total uint64 // Total # of bytes written
+	Size  uint64
 	Part  string
 }
 
 func (wc *WriteCounter) Write(p []byte) (int, error) {
 	n := len(p)
-	wc.Total += int64(n)
+	wc.Total += uint64(n)
 	var per float64 = float64(wc.Total) / float64(wc.Size)
 	var i int = int(per * 100)
 	fmt.Printf("\r%s%d%% %s %s", util.Bar(i, 25), i, util.ByteFormat(wc.Total), wc.Part)
 	return n, nil
 }
 
-func Download(url string, saveas string, size int64, hash string) {
+func Download(url string, saveas string, size uint64, hash string) {
 	start := time.Now()
 	res, err := http.Get(url)
 	if err != nil {
@@ -134,20 +134,20 @@ func Download(url string, saveas string, size int64, hash string) {
 	util.PrintMd5(saveas)
 }
 
-func DownloadPlay(url string, saveas string, size int64, hash string) {
+func DownloadPlay(url string, saveas string, size uint64, hash string) {
 	fmt.Println(url)
 }
 
-var playNo int64 = 0
-var waitNo int64 = 1
+var playNo uint64 = 0
+var waitNo uint64 = 1
 
-func PlayStream(url string, saveas string, size int64, hash string) {
+func PlayStream(url string, saveas string, size uint64, hash string) {
 	startTime := time.Now()
 	var playerRun bool = false
-	var thread int64 = 4
-	var thunkSize int64 = 1048576
-	var startContinue int64 = 0
-	var forceRange int64 = 0
+	var thread uint64 = 4
+	var thunkSize uint64 = 1048576
+	var startContinue uint64 = 0
+	var forceRange uint64 = 0
 	if len(os.Args) >= 4 {
 		var fl string
 		if len(os.Args) > 4 {
@@ -192,7 +192,7 @@ func PlayStream(url string, saveas string, size int64, hash string) {
 		if forceRange > 1 {
 			startContinue = forceRange
 		} else {
-			startContinue = stat.Size()
+			startContinue = uint64(stat.Size())
 		}
 
 		fmt.Println(startContinue)
@@ -210,9 +210,9 @@ func PlayStream(url string, saveas string, size int64, hash string) {
 			os.Exit(0)
 		}
 	}
-	var start int64 = startContinue
-	var i int64
-	var chunEnd int64
+	var start uint64 = startContinue
+	var i uint64
+	var chunEnd uint64
 	for i = 1; i <= thread; i++ {
 		playNo = playNo + 1
 		chunEnd = start + thunkSize*playNo
@@ -260,7 +260,7 @@ func callPlayer(file string) {
 	cmd.Start()
 }
 
-func startPlayChunkDownload(url string, saveas string, start int64, end int64, playno int64) {
+func startPlayChunkDownload(url string, saveas string, start uint64, end uint64, playno uint64) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -308,18 +308,18 @@ func startPlayChunkDownload(url string, saveas string, start int64, end int64, p
 
 }
 
-func getRange(str string, start int64, end int64) (bool, int64, int64) {
+func getRange(str string, start uint64, end uint64) (bool, uint64, uint64) {
 	var rangeXp = regexp.MustCompile(`^(\d+)-(\d+)$`)
 	var rangeXpAll = regexp.MustCompile(`^(\d+)-$`)
 	var matched bool = false
-	var matchStart int64
-	var matchEnd int64
+	var matchStart uint64
+	var matchEnd uint64
 	if rangeXp.MatchString(str) {
 		match := rangeXp.FindStringSubmatch(str)
 		strSt1, _ := strconv.Atoi(match[1])
-		matchStart = int64(strSt1)
+		matchStart = uint64(strSt1)
 		strSt2, _ := strconv.Atoi(match[2])
-		matchEnd = int64(strSt2)
+		matchEnd = uint64(strSt2)
 		if matchStart < 8192 {
 			matchStart = matchStart * 1048576
 		}
@@ -337,7 +337,7 @@ func getRange(str string, start int64, end int64) (bool, int64, int64) {
 	} else if rangeXpAll.MatchString(str) {
 		match := rangeXpAll.FindStringSubmatch(str)
 		strSt1, _ := strconv.Atoi(match[1])
-		matchStart = int64(strSt1)
+		matchStart = uint64(strSt1)
 		if matchStart < 8192 {
 			matchStart = matchStart * 1048576
 		}

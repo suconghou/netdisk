@@ -14,17 +14,17 @@ import (
 )
 
 type PcsInfo struct {
-	Quota      int64
-	Used       int64
+	Quota      uint64
+	Used       uint64
 	Request_id int
 }
 
 type FileItem struct {
 	Fs_id int
 	Path  string
-	Ctime int64
-	Mtime int64
-	Size  int64
+	Ctime uint64
+	Mtime uint64
+	Size  uint64
 	IsDir int
 }
 
@@ -36,9 +36,9 @@ type PcsFileList struct {
 type PcsFileMeta struct {
 	Fs_id       int
 	Path        string
-	Ctime       int64
-	Mtime       int64
-	Size        int64
+	Ctime       uint64
+	Mtime       uint64
+	Size        uint64
 	Isdir       int
 	Ifhassubdir int
 	Block_list  string
@@ -80,7 +80,7 @@ func ListDir(path string) bool {
 		os.Exit(1)
 	} else {
 		b := bytes.Buffer{}
-		var total int64 = 0
+		var total uint64 = 0
 		for _, item := range info.List {
 			total = total + item.Size
 			b.WriteString("\n")
@@ -96,7 +96,7 @@ func ListDir(path string) bool {
 	return true
 }
 
-func Get(filePath string, dist string, size int64, hash string) {
+func Get(filePath string, dist string, size uint64, hash string) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "download", config.Cfg.Token, filePath)
 	if dist == "" {
 		dir, _ := os.Getwd()
@@ -105,7 +105,7 @@ func Get(filePath string, dist string, size int64, hash string) {
 	netlayer.Download(url, dist, size, hash)
 }
 
-func Wget(filePath string, dist string, size int64, hash string) {
+func Wget(filePath string, dist string, size uint64, hash string) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "download", config.Cfg.Token, filePath)
 	if dist == "" {
 		dir, _ := os.Getwd()
@@ -114,7 +114,7 @@ func Wget(filePath string, dist string, size int64, hash string) {
 	netlayer.WgetDownload(url, dist, size, hash)
 }
 
-func GetPlay(filePath string, dist string, size int64, hash string) {
+func GetPlay(filePath string, dist string, size uint64, hash string) {
 	var playType string = "M3U8_FLV_264_480"
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s&type=%s", "streaming", config.Cfg.Token, filePath, playType)
 	if dist == "" {
@@ -124,7 +124,7 @@ func GetPlay(filePath string, dist string, size int64, hash string) {
 	netlayer.DownloadPlay(url, dist, size, hash)
 }
 
-func GetPlayStream(filePath string, dist string, size int64, hash string) {
+func GetPlayStream(filePath string, dist string, size uint64, hash string) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "download", config.Cfg.Token, filePath)
 	if dist == "" {
 		dir, _ := os.Getwd()
@@ -133,7 +133,7 @@ func GetPlayStream(filePath string, dist string, size int64, hash string) {
 	netlayer.PlayStream(url, dist, size, hash)
 }
 
-func GetFileInfo(path string, noprint bool) (bool, int64, string) {
+func GetFileInfo(path string, noprint bool) (bool, uint64, string) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "meta", config.Cfg.Token, path)
 	str := netlayer.Get(url)
 	info := &PcsFileMetaList{}
@@ -151,8 +151,8 @@ func GetFileInfo(path string, noprint bool) (bool, int64, string) {
 		b.WriteString(item.Path)
 		b.WriteString("\n文件大小:" + util.ByteFormat(item.Size))
 		b.WriteString("\n文件ID:" + strconv.Itoa(item.Fs_id))
-		b.WriteString("\n创建时间:" + time.Unix(item.Ctime, 0).Format("2006/01/02 15:04:05"))
-		b.WriteString("\n修改时间:" + time.Unix(item.Mtime, 0).Format("2006/01/02 15:04:05"))
+		b.WriteString("\n创建时间:" + time.Unix(int64(item.Ctime), 0).Format("2006/01/02 15:04:05"))
+		b.WriteString("\n修改时间:" + time.Unix(int64(item.Mtime), 0).Format("2006/01/02 15:04:05"))
 		b.WriteString("\n类型:" + util.BoolString(item.Isdir == 0, "文件", "文件夹"))
 		b.WriteString("\n子目录:" + util.BoolString(item.Ifhassubdir == 0, "无", "包含"))
 

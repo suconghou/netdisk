@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func ByteFormat(bytes int64) string {
+func ByteFormat(bytes uint64) string {
 	unit := [...]string{"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"}
 	if bytes >= 1024 {
 		e := math.Floor(math.Log(float64(bytes)) / math.Log(float64(1024)))
@@ -43,12 +43,13 @@ func StringPad(str string, le int) string {
 	return str
 }
 
-func DateFormat(times int64) string {
+func DateFormat(times uint64) string {
+	t:=int64(times)
 	var str string
-	if time.Unix(times, 0).Format("06/01/02") == time.Now().Format("06/01/02") {
-		str = time.Unix(times, 0).Format("15:04:05")
+	if time.Unix(t, 0).Format("06/01/02") == time.Now().Format("06/01/02") {
+		str = time.Unix(t, 0).Format("15:04:05")
 	} else {
-		str = time.Unix(times, 0).Format("06/01/02")
+		str = time.Unix(t, 0).Format("06/01/02")
 	}
 	return str
 }
