@@ -1,5 +1,0 @@
-package netlayer
-
-func Get() {
-
-}

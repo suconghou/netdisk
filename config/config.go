@@ -1,59 +1,82 @@
 package config
 
 import (
-	"flag"
+	"encoding/json"
+	_ "flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 )
 
-func usage() {
-	s := `Disk: a remote disk for sync files and cloud storage
-Usage: disk Command [Options...]
-Commands:
-    cd                      Change current directory.
-    connect                 Connect to the server.
-    get                     Download file from the server.
-    info                    Get the system information.
-    list                    Get the task information.
-    ls                      List files in current directory.
-    mkdir                   Create a new directory.
-    put                     Upload file to the server.
-    rm                      Delete file from the server.
-    server                  Run in server mode.
-    sync                    Sync the files from server.
-    wget                    Download the file in the server.
-Options:
-    -r, -root=<path>        Root path of the site. Default is current working directory.
-    -p, -port=<port>        HTTP port. Default is 8080.
-        -404=<path>         Path of a custom 404 file, relative to Root. Example: /404.html.
-    -g, -gzip=<bool>        Turn on or off gzip compression. Default value is true (means turn on).
-    -a, -auth=<user:pass>   Turn on digest auth and set username and password (separate by colon).
-                            After turn on digest auth, all the page require authentication.
-        -401=<path>         Path of a custom 401 file, relative to Root. Example: /401.html.
-                            If authentication fails and 401 file is set,
-                            the file content will be sent to the client.
-                            If use with -make-cert, will generate a certificate to the path.
-        -key=<path>         Load a file as a private key.
-Other options:
-    -v, -version            Show version information.
-    -h, -help               Show help message.
-Author:
-    suconghou
-    <https://github.com/suconghou>
-    <http://blog.suconghou.cn>
-`
-	fmt.Printf(s)
-	os.Exit(0)
+var ConfigPath string = "/etc/disk.json"
+
+type Config struct {
+	Token string
+	Root  string
+	Path  string
+	Disk  string
+}
+
+var Cfg Config
+
+func LoadConfig() Config {
+	strJson, err := ioutil.ReadFile(ConfigPath)
+	if err != nil {
+		Cfg.Token = "token"
+		Cfg.Root = "/apps/suconghou"
+		Cfg.Path = ""
+		Cfg.Disk = "pcs"
+		if os.IsNotExist(err) {
+			SaveConfig()
+			return Cfg
+		} else if os.IsPermission(err) {
+			fmt.Println(err)
+			os.Exit(1)
+		} else {
+			panic(err)
+		}
+		return Cfg
+	} else {
+		cfg := &Config{}
+		err = json.Unmarshal([]byte(strJson), &cfg)
+		return *cfg
+	}
 
 }
 
-func LoadConfig() {
+func ConfigSet(key string, value string) {
+	fmt.Println(key)
+	fmt.Println(value)
+}
 
-	var key string
-	var port uint
-	flag.StringVar(&key, "k", "", "Password")
-	flag.UintVar(&port, "p", 0, "HTTP port")
-	flag.UintVar(&port, "port", 0, "HTTP port")
-	flag.Parse()
+func ConfigGet(key string) {
+
+}
+
+func ConfigList() {
+
+}
+
+func SaveConfig() {
+	strJson, err := json.Marshal(Cfg)
+	if err != nil {
+		panic(err)
+	} else {
+		err := ioutil.WriteFile(ConfigPath, strJson, 0666)
+		if err != nil {
+			if os.IsPermission(err) {
+				fmt.Println(err)
+				os.Exit(1)
+			} else if os.IsExist(err) {
+				fmt.Println(err)
+				os.Exit(2)
+			} else {
+				panic(err)
+			}
+		}
+	}
+}
+
+func Error() {
 
 }
