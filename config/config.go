@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
 )
 
 var ConfigPath string = "/etc/disk.json"
@@ -20,6 +21,10 @@ type Config struct {
 var Cfg Config
 
 func LoadConfig() Config {
+
+	if runtime.GOOS == "windows" {
+		ConfigPath = `C:\Users\Default\disk.json`
+	}
 	strJson, err := ioutil.ReadFile(ConfigPath)
 	if err != nil {
 		Cfg.Token = "token"

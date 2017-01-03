@@ -126,6 +126,7 @@ func Sync() {
 func Info() {
 	if len(os.Args) == 2 {
 		fslayer.GetInfo()
+		fmt.Println("配置文件:" + config.ConfigPath)
 	} else {
 		fslayer.GetFileInfo(absPath(os.Args[2]), false)
 	}
