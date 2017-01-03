@@ -17,10 +17,29 @@ var wgetChan = make(chan int)
 var playChan = make(chan uint64)
 
 func Get(url string) []byte {
-	response, _ := http.Get(url)
+	response, err := http.Get(url)
+	if err != nil {
+		panic(err)
+	}
 	defer response.Body.Close()
-	body, _ := ioutil.ReadAll(response.Body)
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		panic(err)
+	}
 	return body
+}
+
+func Post(url string, contentType string, body io.Reader) []byte {
+	response, err := http.Post(url, contentType, body)
+	if err != nil {
+		panic(err)
+	}
+	defer response.Body.Close()
+	bodyStr, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		panic(err)
+	}
+	return bodyStr
 }
 
 func WgetDownload(url string, saveas string, size uint64, hash string) {
@@ -85,10 +104,6 @@ func startChunkDownload(url string, saveas string, start uint64, end uint64) {
 		os.Exit(1)
 	}
 	wgetChan <- 1
-}
-
-func Post() {
-
 }
 
 // WriteCounter counts the number of bytes written to it.

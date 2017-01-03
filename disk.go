@@ -26,6 +26,8 @@ func cli() {
 		commands.Cd()
 	case "pwd":
 		commands.Pwd()
+	case "mv":
+		commands.Mv()
 	case "mkdir":
 		commands.Mkdir()
 	case "rm":
@@ -48,6 +50,8 @@ func cli() {
 		commands.Help()
 	case "config":
 		commands.Config()
+	case "task":
+		commands.Task()
 	default:
 		commands.Usage()
 	}

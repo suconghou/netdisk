@@ -41,12 +41,35 @@ func Pwd() {
 	fmt.Println(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + "  ➜  " + config.Cfg.Path)
 }
 
+func Mv() {
+	if len(os.Args) == 4 {
+		var source string = absPath(os.Args[2])
+		var target string = absPath(os.Args[3])
+		ok, _, _ := fslayer.GetFileInfo(source, false)
+		if ok {
+			fslayer.MoveFile(source, target)
+		}
+	} else {
+
+	}
+
+}
+
 func Mkdir() {
 
 }
 
 func Rm() {
-	fmt.Println("rm files")
+	if len(os.Args) == 3 {
+		var path string = absPath(os.Args[2])
+		ok, _, _ := fslayer.GetFileInfo(path, false)
+		if ok {
+			fslayer.DeleteFile(path)
+		}
+	} else {
+
+		fmt.Println("rm files")
+	}
 }
 
 func Get() {
@@ -66,7 +89,18 @@ func Get() {
 }
 
 func Put() {
-
+	if len(os.Args) >= 3 {
+		var path string = absLocalPath(os.Args[2])
+		var savePath string = absPath(os.Args[2])
+		if util.FileOk(path) {
+			var ondup string = util.BoolString(len(os.Args) >= 4, "overwrite", "newcopy")
+			fslayer.PutFile(path, savePath, ondup)
+		} else {
+			fmt.Println(path + "不存在或不可读")
+		}
+	} else {
+		fmt.Println("Usage put filepath ")
+	}
 }
 
 func Wget() {
@@ -133,6 +167,20 @@ func Config() {
 		config.ConfigGet(os.Args[3])
 	} else if len(os.Args) == 5 && os.Args[2] == "set" {
 		config.ConfigSet(os.Args[3], os.Args[4])
+	} else {
+		config.Error()
+	}
+}
+
+func Task() {
+	if (len(os.Args) == 2) || (os.Args[2] == "list") {
+		fslayer.GetTaskList()
+	} else if len(os.Args) == 5 && os.Args[2] == "add" {
+		fslayer.AddTask(absPath(os.Args[3]), os.Args[4])
+	} else if len(os.Args) == 4 && os.Args[2] == "remove" {
+		fslayer.RemoveTask(os.Args[3])
+	} else if len(os.Args) == 4 && os.Args[2] == "info" {
+		fslayer.GetTaskInfo(os.Args[3])
 	} else {
 		config.Error()
 	}

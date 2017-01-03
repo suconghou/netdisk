@@ -44,7 +44,7 @@ func StringPad(str string, le int) string {
 }
 
 func DateFormat(times uint64) string {
-	t:=int64(times)
+	t := int64(times)
 	var str string
 	if time.Unix(t, 0).Format("06/01/02") == time.Now().Format("06/01/02") {
 		str = time.Unix(t, 0).Format("15:04:05")
@@ -62,13 +62,13 @@ func BoolString(b bool, s, s1 string) string {
 }
 
 func PrintMd5(filePath string) {
-	file, inerr := os.Open(filePath)
-	if inerr == nil {
+	file, err := os.Open(filePath)
+	if err == nil {
 		md5h := md5.New()
 		io.Copy(md5h, file)
-		fmt.Printf("%s   %x\n",filePath, md5h.Sum([]byte(""))) //md5
+		fmt.Printf("%s   %x\n", filePath, md5h.Sum([]byte(""))) //md5
 	} else {
-		fmt.Println(inerr)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
@@ -76,4 +76,25 @@ func PrintMd5(filePath string) {
 func Bar(vl int, width int) string {
 
 	return fmt.Sprintf("%s %s", strings.Repeat("█", vl/(100/width)), strings.Repeat(" ", width-vl/(100/width)))
+}
+
+func FileOk(filePath string) bool {
+	file, err := os.Open(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println(err)
+			os.Exit(1)
+		} else if os.IsPermission(err) {
+			fmt.Println(err)
+			os.Exit(1)
+		} else {
+			panic(err)
+		}
+	} else {
+		md5h := md5.New()
+		io.Copy(md5h, file)
+		fmt.Printf("%s   %x\n", filePath, md5h.Sum([]byte(""))) //md5
+		return true
+	}
+	return false
 }
