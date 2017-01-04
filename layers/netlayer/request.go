@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"time"
 	"util"
@@ -234,9 +235,6 @@ func PlayStream(url string, saveas string, size uint64, hash string) {
 			startContinue = uint64(stat.Size())
 		}
 
-		fmt.Println(startContinue)
-		fmt.Println(size)
-
 		i := int((float64(startContinue) / float64(size)) * 100)
 		fmt.Printf("\r%s%d%% %s  %s ", util.Bar(i, 25), i, util.ByteFormat(startContinue), util.BoolString(i > 5, "★", "☆"))
 		if !playerRun && (i > 5) {
@@ -295,8 +293,13 @@ func PlayStream(url string, saveas string, size uint64, hash string) {
 }
 
 func callPlayer(file string) {
-	cmd := exec.Command("mpv", file)
-	cmd.Start()
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("PotPlayerMini.exe", file)
+		cmd.Start()
+	} else {
+		cmd := exec.Command("mpv", file)
+		cmd.Start()
+	}
 }
 
 func startPlayChunkDownload(url string, saveas string, start uint64, end uint64, playno uint64) {

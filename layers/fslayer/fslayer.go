@@ -9,6 +9,7 @@ import (
 	"layers/netlayer"
 	"mime/multipart"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -97,8 +98,8 @@ func GetInfo() {
 }
 
 //TODO order and limit
-func ListDir(path string) bool {
-	absPath := filepath.Join(config.Cfg.Root, path)
+func ListDir(filePath string) bool {
+	absPath := path.Join(config.Cfg.Root, filePath)
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "list", config.Cfg.Token, absPath)
 	str := netlayer.Get(url)
 	info := &PcsFileList{}
@@ -118,7 +119,7 @@ func ListDir(path string) bool {
 			b.WriteString(util.StringPad(fmt.Sprintf("%s@%d", util.BoolString(item.IsDir == 0, "f", "d"), item.Fs_id), 20))
 			b.WriteString(util.StringPad(item.Path, 20))
 		}
-		fmt.Print(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + "  ➜  " + path + " " + util.ByteFormat(total))
+		fmt.Print(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + "  ➜  " + filePath + " " + util.ByteFormat(total))
 		fmt.Println(b.String())
 	}
 	return true

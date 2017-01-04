@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"layers/fslayer"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"util"
@@ -204,35 +205,35 @@ func Daemon() {
 	fmt.Println("daemon start")
 }
 
-func absPath(path string) string {
-	path = filepath.Clean(path)
-	if filepath.IsAbs(path) {
-		if !strings.HasPrefix(path, config.Cfg.Root) {
-			path = filepath.Join(config.Cfg.Root, "."+path)
+func absPath(filePath string) string {
+	filePath = path.Clean(filePath)
+	if path.IsAbs(filePath) {
+		if !strings.HasPrefix(filePath, config.Cfg.Root) {
+			filePath = fmt.Sprintf("%s/%s", config.Cfg.Root, "."+filePath)
 		}
 	} else {
-		path = filepath.Join(config.Cfg.Root, config.Cfg.Path, path)
+		filePath = fmt.Sprintf("%s/%s/%s", config.Cfg.Root, config.Cfg.Path, filePath)
 	}
-	return path
+	return path.Clean(filePath)
 }
 
-func absNoRoot(path string) string {
-	path = filepath.Clean(path)
-	if filepath.IsAbs(path) {
-		path = path
+func absNoRoot(filePath string) string {
+	filePath = path.Clean(filePath)
+	if path.IsAbs(filePath) {
+		filePath = filePath
 	} else {
-		path = filepath.Join(config.Cfg.Path, path)
+		filePath = fmt.Sprintf("%s/%s", config.Cfg.Path, filePath)
 	}
-	return path
+	return path.Clean(filePath)
 }
 
-func absLocalPath(path string) string {
-	path = filepath.Clean(path)
-	if filepath.IsAbs(path) {
-		path = path
+func absLocalPath(filePath string) string {
+	filePath = filepath.Clean(filePath)
+	if filepath.IsAbs(filePath) {
+		filePath = filePath
 	} else {
 		dir, _ := os.Getwd()
-		path = filepath.Join(dir, filepath.Base(path))
+		filePath = filepath.Join(dir, filepath.Base(filePath))
 	}
-	return path
+	return filepath.Clean(filePath)
 }
