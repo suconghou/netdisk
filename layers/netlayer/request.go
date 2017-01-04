@@ -45,21 +45,23 @@ func Post(url string, contentType string, body io.Reader) []byte {
 func WgetDownload(url string, saveas string, size uint64, hash string) {
 	startTime := time.Now()
 	fmt.Println(url)
-	var thread uint64 = 5
+	const thread uint64 = 5
 	var last uint64 = thread - 1
 	var thunkSize = size / thread
 	var start uint64 = 0
 	fmt.Println(size)
 	fmt.Println(thunkSize)
 	var i uint64
+	filesList := make([]string, thread, thread)
 	for i = 0; i < thread; i++ {
-		partName := saveas + ".part" + strconv.Itoa(int(i))
+		partName := saveas + ".part" + strconv.FormatUint(i, 10)
 		if i == last {
 			go startChunkDownload(url, partName, start, size)
 		} else {
 			go startChunkDownload(url, partName, start, start+thunkSize-1)
 		}
 		start = start + thunkSize
+		filesList[i] = partName
 	}
 	var j uint64
 	for j = 0; j < thread; j++ {
@@ -67,9 +69,32 @@ func WgetDownload(url string, saveas string, size uint64, hash string) {
 	}
 	endTime := time.Since(startTime)
 	speed := float64(size/1024) / endTime.Seconds()
-
+	catFile(filesList, saveas)
 	fmt.Printf("\n下载完毕,耗时%s,%.2fKB/s,校验MD5中...\n", endTime.String(), speed)
+	util.PrintMd5(saveas)
+}
 
+func catFile(filesList []string, saveas string) {
+	f, err := os.Create(saveas)
+	if err != nil {
+		panic(err)
+	} else {
+		f.Close()
+	}
+	file, err := os.OpenFile(saveas, os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		panic(err)
+	}
+	for _, item := range filesList {
+		part, err := os.Open(item)
+		if err != nil {
+			panic(err)
+		}
+		defer part.Close()
+		defer os.Remove(item)
+		io.Copy(file, part)
+	}
+	defer file.Close()
 }
 
 func startChunkDownload(url string, saveas string, start uint64, end uint64) {
@@ -86,7 +111,6 @@ func startChunkDownload(url string, saveas string, start uint64, end uint64) {
 	if err != nil {
 		panic(err)
 	}
-
 	req.Header.Set("Range", fmt.Sprintf(" bytes=%d-%d", start, end))
 	res, err := client.Do(req)
 	defer res.Body.Close()

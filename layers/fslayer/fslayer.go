@@ -16,17 +16,23 @@ import (
 )
 
 type PcsRequest struct {
-	Request_id int
+	Request_id uint64
+}
+
+type PcsRequestError struct {
+	Request_id uint64
+	Error_code int
+	Error_msg  string
 }
 
 type PcsInfo struct {
 	Quota      uint64
 	Used       uint64
-	Request_id int
+	Request_id uint64
 }
 
 type FileItem struct {
-	Fs_id int
+	Fs_id uint64
 	Path  string
 	Ctime uint64
 	Mtime uint64
@@ -36,11 +42,11 @@ type FileItem struct {
 
 type PcsFileList struct {
 	List       []FileItem
-	Request_id int
+	Request_id uint64
 }
 
 type PcsFileMeta struct {
-	Fs_id       int
+	Fs_id       uint64
 	Path        string
 	Ctime       uint64
 	Mtime       uint64
@@ -53,22 +59,22 @@ type PcsFileMeta struct {
 
 type PcsFileMetaList struct {
 	List       []PcsFileMeta
-	Request_id int
+	Request_id uint64
 }
 
 type UpFileInfo struct {
-	Fs_id      int
+	Fs_id      uint64
 	Path       string
 	Ctime      uint64
 	Mtime      uint64
 	Md5        string
 	Size       uint64
-	Request_id int
+	Request_id uint64
 }
 
 type AddTaskRet struct {
-	Task_id    int
-	Request_id int
+	Task_id    uint64
+	Request_id uint64
 }
 
 func GetInfo() {
@@ -109,7 +115,7 @@ func ListDir(path string) bool {
 			b.WriteString(util.StringPad(util.DateFormat(item.Ctime), 10))
 			b.WriteString(util.StringPad(util.DateFormat(item.Mtime), 10))
 			b.WriteString(util.StringPad(util.ByteFormat(item.Size), 10))
-			b.WriteString(util.StringPad(util.BoolString(item.IsDir == 0, "f", "d")+"@"+strconv.Itoa(item.Fs_id), 20))
+			b.WriteString(util.StringPad(fmt.Sprintf("%s@%d", util.BoolString(item.IsDir == 0, "f", "d"), item.Fs_id), 20))
 			b.WriteString(util.StringPad(item.Path, 20))
 		}
 		fmt.Print(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + "  ➜  " + path + " " + util.ByteFormat(total))
@@ -172,7 +178,7 @@ func GetFileInfo(path string, noprint bool) (bool, uint64, string) {
 		b := bytes.Buffer{}
 		b.WriteString(item.Path)
 		b.WriteString("\n文件大小:" + util.ByteFormat(item.Size))
-		b.WriteString("\n文件标识:" + strconv.Itoa(item.Fs_id))
+		b.WriteString("\n文件标识:" + strconv.FormatUint(item.Fs_id, 10))
 		b.WriteString("\n创建时间:" + time.Unix(int64(item.Ctime), 0).Format("2006/01/02 15:04:05"))
 		b.WriteString("\n修改时间:" + time.Unix(int64(item.Mtime), 0).Format("2006/01/02 15:04:05"))
 		b.WriteString("\n类型:" + util.BoolString(item.Isdir == 0, "文件", "文件夹"))
@@ -240,16 +246,30 @@ func PutFile(filePath string, savePath string, ondup string) {
 	b := bytes.Buffer{}
 	b.WriteString("已保存为:" + info.Path)
 	b.WriteString("\n文件大小:" + util.ByteFormat(info.Size))
-	b.WriteString("\n文件标识:" + strconv.Itoa(info.Fs_id))
+	b.WriteString("\n文件标识:" + strconv.FormatUint(info.Fs_id, 10))
 	b.WriteString("\n创建时间:" + time.Unix(int64(info.Ctime), 0).Format("2006/01/02 15:04:05"))
 	b.WriteString("\n修改时间:" + time.Unix(int64(info.Mtime), 0).Format("2006/01/02 15:04:05"))
 	b.WriteString("\n文件哈希:" + info.Md5)
 	fmt.Println(b.String())
 }
 
+func Mkdir(path string) {
+	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "mkdir", config.Cfg.Token, path)
+	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
+	infoerr := &PcsRequestError{}
+	if err := json.Unmarshal(str, &infoerr); err == nil {
+		if infoerr.Error_msg == "" {
+			fmt.Println("已创建 " + path)
+		} else {
+			fmt.Println(path + " " + infoerr.Error_msg)
+		}
+	} else {
+		panic(err)
+	}
+}
+
 func Put() {
 	fmt.Println("put")
-
 }
 
 func DeleteFile(path string) {
@@ -285,7 +305,7 @@ func AddTask(savePath string, sourceUrl string) {
 	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
 	info := &AddTaskRet{}
 	if err := json.Unmarshal(str, &info); err == nil {
-		fmt.Println("任务ID:" + strconv.Itoa(info.Task_id))
+		fmt.Println("任务ID:" + strconv.FormatUint(info.Task_id, 10))
 	} else {
 		fmt.Println(err)
 	}

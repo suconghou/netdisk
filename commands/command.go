@@ -57,6 +57,13 @@ func Mv() {
 
 func Mkdir() {
 
+	if len(os.Args) == 3 {
+		var path string = absPath(os.Args[2])
+		fslayer.Mkdir(path)
+	} else {
+		fmt.Println("mkdir")
+	}
+
 }
 
 func Rm() {
