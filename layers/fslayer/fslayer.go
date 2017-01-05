@@ -10,7 +10,6 @@ import (
 	"mime/multipart"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"time"
 	"util"
@@ -127,38 +126,34 @@ func ListDir(filePath string) bool {
 
 func Get(filePath string, dist string, size uint64, hash string) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "download", config.Cfg.Token, filePath)
-	if dist == "" {
-		dir, _ := os.Getwd()
-		dist = filepath.Join(dir, filepath.Base(filePath))
-	}
 	netlayer.Download(url, dist, size, hash)
 }
 
 func Wget(filePath string, dist string, size uint64, hash string) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "download", config.Cfg.Token, filePath)
-	if dist == "" {
-		dir, _ := os.Getwd()
-		dist = filepath.Join(dir, filepath.Base(filePath))
-	}
 	netlayer.WgetDownload(url, dist, size, hash)
 }
 
-func GetPlay(filePath string, dist string, size uint64, hash string) {
-	var playType string = "M3U8_FLV_264_480"
-	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s&type=%s", "streaming", config.Cfg.Token, filePath, playType)
-	if dist == "" {
-		dir, _ := os.Getwd()
-		dist = filepath.Join(dir, filepath.Base(filePath))
+func WgetUrl(url string, dist string) {
+	size := netlayer.GetUrlInfo(url)
+	if size > 1 {
+		fmt.Println(dist + " " + util.ByteFormat(size))
+		var hash string = ""
+		netlayer.WgetDownload(url, dist, size, hash)
 	}
-	netlayer.DownloadPlay(url, dist, size, hash)
+}
+
+func PlayUrl(url string, dist string) {
+	size := netlayer.GetUrlInfo(url)
+	if size > 1 {
+		fmt.Println(dist + " " + util.ByteFormat(size))
+		var hash string = ""
+		netlayer.PlayStream(url, dist, size, hash)
+	}
 }
 
 func GetPlayStream(filePath string, dist string, size uint64, hash string) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "download", config.Cfg.Token, filePath)
-	if dist == "" {
-		dir, _ := os.Getwd()
-		dist = filepath.Join(dir, filepath.Base(filePath))
-	}
 	netlayer.PlayStream(url, dist, size, hash)
 }
 

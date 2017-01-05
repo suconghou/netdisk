@@ -82,14 +82,17 @@ func Rm() {
 
 func Get() {
 	if len(os.Args) >= 3 {
+		var filePath = absPath(os.Args[2])
+
 		var dist string = ""
 		if len(os.Args) >= 4 {
-			dist = filepath.Clean(os.Args[3])
+			dist = absLocalPath(os.Args[3])
+		} else {
+			dist = absLocalPath(path.Base(filePath))
 		}
-		var path = absPath(os.Args[2])
-		ok, size, hash := fslayer.GetFileInfo(path, false)
+		ok, size, hash := fslayer.GetFileInfo(filePath, false)
 		if ok {
-			fslayer.Get(path, dist, size, hash)
+			fslayer.Get(filePath, dist, size, hash)
 		}
 	} else {
 		fmt.Println("Usage get filepath saveas")
@@ -113,15 +116,23 @@ func Put() {
 
 func Wget() {
 	if len(os.Args) >= 3 {
+		var filePath = absPath(os.Args[2])
 		var dist string = ""
 		if len(os.Args) >= 4 {
-			dist = filepath.Clean(os.Args[3])
+			dist = absLocalPath(os.Args[3])
+		} else {
+			dist = absLocalPath(path.Base(filePath))
 		}
-		var path = absPath(os.Args[2])
-		ok, size, hash := fslayer.GetFileInfo(path, false)
-		if ok {
-			fslayer.Wget(path, dist, size, hash)
+		if strings.HasPrefix(os.Args[2], "http://") || strings.HasPrefix(os.Args[2], "https://") {
+			tokens := strings.Split(dist, "?")
+			fslayer.WgetUrl(os.Args[2], tokens[0])
+		} else {
+			ok, size, hash := fslayer.GetFileInfo(filePath, false)
+			if ok {
+				fslayer.Wget(filePath, dist, size, hash)
+			}
 		}
+
 	} else {
 		fmt.Println("Usage get filepath saveas")
 	}
@@ -142,8 +153,8 @@ func Info() {
 
 func Hash() {
 	if len(os.Args) == 3 {
-		var filepath string = absLocalPath(os.Args[2])
-		util.PrintMd5(filepath)
+		var filePath string = absLocalPath(os.Args[2])
+		util.PrintMd5(filePath)
 	} else {
 		fmt.Println("hash file")
 	}
@@ -151,15 +162,24 @@ func Hash() {
 
 func Play() {
 	if len(os.Args) >= 3 {
+
+		var filePath = absPath(os.Args[2])
 		var dist string = ""
 		if len(os.Args) >= 4 && (!strings.Contains(os.Args[3], "-")) {
 			dist = filepath.Clean(os.Args[3])
+		} else {
+			dist = absLocalPath(path.Base(filePath))
 		}
-		var path = absPath(os.Args[2])
-		ok, size, hash := fslayer.GetFileInfo(path, false)
-		if ok {
-			fslayer.GetPlayStream(path, dist, size, hash)
+		if strings.HasPrefix(os.Args[2], "http://") || strings.HasPrefix(os.Args[2], "https://") {
+			tokens := strings.Split(dist, "?")
+			fslayer.PlayUrl(os.Args[2], tokens[0])
+		} else {
+			ok, size, hash := fslayer.GetFileInfo(filePath, false)
+			if ok {
+				fslayer.GetPlayStream(filePath, dist, size, hash)
+			}
 		}
+
 	} else {
 		fmt.Println("Usage get filepath saveas")
 	}

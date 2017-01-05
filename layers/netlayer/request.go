@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -264,8 +265,9 @@ func PlayStream(url string, saveas string, size uint64, hash string) {
 		s := <-playChan
 		endTime := time.Since(startTime).Seconds()
 		speed := float64((s-startContinue)/1024) / endTime
+		leftTime := (float64(size)/1024)/speed - endTime
 		i := int((float64(s) / float64(size)) * 100)
-		fmt.Printf("\r%s%d%% %s %.2fKB/s %.1fs %s ", util.Bar(i, 25), i, util.ByteFormat(s), speed, endTime, util.BoolString(i > 5, "★", "☆"))
+		fmt.Printf("\r%s%d%% %s %.2fKB/s %.1fs  %.1fs  %s    ", util.Bar(i, 25), i, util.ByteFormat(s), speed, endTime, leftTime, util.BoolString(i > 5, "★", "☆"))
 		if !playerRun && (i > 5) {
 			playerRun = true
 			go callPlayer(saveas)
@@ -396,4 +398,20 @@ func getRange(str string, start uint64, end uint64) (bool, uint64, uint64) {
 	}
 	return matched, matchStart, matchEnd
 
+}
+
+func GetUrlInfo(url string) uint64 {
+	var sourceSize uint64 = 0
+	response, err := http.Head(url)
+	if err != nil {
+		log.Println("Error while downloading", url, ":", err)
+		os.Exit(1)
+	}
+	if response.StatusCode != http.StatusOK {
+		log.Println("Server return non-200 status: %v\n", response.Status)
+		os.Exit(1)
+	}
+	length, _ := strconv.Atoi(response.Header.Get("Content-Length"))
+	sourceSize = uint64(length)
+	return sourceSize
 }
