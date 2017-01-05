@@ -328,23 +328,26 @@ func startPlayChunkDownload(url string, saveas string, start uint64, end uint64,
 		} else {
 			body, err := ioutil.ReadAll(res.Body)
 			if err != nil {
-				panic(err)
-			}
-			for {
-				if waitNo == playno {
-					break
-				} else {
-					time.Sleep(100 * time.Millisecond)
+				fmt.Println(err)
+				go startPlayChunkDownload(url, saveas, start, end, playno)
+			} else {
+				for {
+					if waitNo == playno {
+						break
+					} else {
+						time.Sleep(100 * time.Millisecond)
+					}
 				}
+				file, err := os.OpenFile(saveas, os.O_WRONLY|os.O_APPEND, 0666)
+				if err != nil {
+					panic(err)
+				}
+				defer file.Close()
+				file.Write(body)
+				waitNo = playno + 1
+				playChan <- (end + 1)
 			}
-			file, err := os.OpenFile(saveas, os.O_WRONLY|os.O_APPEND, 0666)
-			if err != nil {
-				panic(err)
-			}
-			defer file.Close()
-			file.Write(body)
-			waitNo = playno + 1
-			playChan <- (end + 1)
+
 		}
 	}
 
