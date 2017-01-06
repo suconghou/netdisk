@@ -208,26 +208,31 @@ func GetFileInfo(path string, noprint bool) (bool, uint64, string) {
 	return false, 0, ""
 }
 
-func PutFile(filePath string, savePath string, ondup string) {
-	url := fmt.Sprintf("https://c.pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s&ondup=%s", "upload", config.Cfg.Token, savePath, ondup)
+func PutFile(filePath string, savePath string, fileSize uint64, ondup string) {
+	startTime := time.Now()
 
+	url := fmt.Sprintf("https://c.pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s&ondup=%s", "upload", config.Cfg.Token, savePath, ondup)
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
-
 	//关键的一步操作
 	fileWriter, err := bodyWriter.CreateFormFile("file", filePath)
 	if err != nil {
 		fmt.Println("error writing to buffer")
 		panic(err)
 	}
+
 	//打开文件句柄操作
-	fh, err := os.Open(filePath)
+	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Println("error opening file")
 		panic(err)
 	}
 	//iocopy
-	_, err = io.Copy(fileWriter, fh)
+	counter := &netlayer.PutWriteCounter{}
+	counter.Size = fileSize
+
+	reader := io.TeeReader(file, fileWriter)
+	_, err = io.Copy(counter, reader)
 	if err != nil {
 		panic(err)
 	}
@@ -238,15 +243,20 @@ func PutFile(filePath string, savePath string, ondup string) {
 	err = json.Unmarshal(str, &info)
 	if err != nil {
 		panic(err)
+	} else {
+		endTime := time.Since(startTime).Seconds()
+		speed := float64(fileSize/1024) / endTime
+		b := bytes.Buffer{}
+		b.WriteString("\n已保存为:" + info.Path)
+		b.WriteString("\n文件大小:" + util.ByteFormat(info.Size))
+		b.WriteString("\n文件标识:" + strconv.FormatUint(info.Fs_id, 10))
+		b.WriteString("\n创建时间:" + time.Unix(int64(info.Ctime), 0).Format("2006/01/02 15:04:05"))
+		b.WriteString("\n修改时间:" + time.Unix(int64(info.Mtime), 0).Format("2006/01/02 15:04:05"))
+		b.WriteString("\n文件哈希:" + info.Md5)
+		b.WriteString("\n耗时:" + fmt.Sprintf("%.1fs,速度:%.2fKB/s", endTime, speed))
+		fmt.Println(b.String())
 	}
-	b := bytes.Buffer{}
-	b.WriteString("已保存为:" + info.Path)
-	b.WriteString("\n文件大小:" + util.ByteFormat(info.Size))
-	b.WriteString("\n文件标识:" + strconv.FormatUint(info.Fs_id, 10))
-	b.WriteString("\n创建时间:" + time.Unix(int64(info.Ctime), 0).Format("2006/01/02 15:04:05"))
-	b.WriteString("\n修改时间:" + time.Unix(int64(info.Mtime), 0).Format("2006/01/02 15:04:05"))
-	b.WriteString("\n文件哈希:" + info.Md5)
-	fmt.Println(b.String())
+
 }
 
 func Mkdir(path string) {

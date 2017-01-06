@@ -21,7 +21,8 @@ var playChan = make(chan uint64)
 func Get(url string) []byte {
 	response, err := http.Get(url)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
@@ -34,7 +35,8 @@ func Get(url string) []byte {
 func Post(url string, contentType string, body io.Reader) []byte {
 	response, err := http.Post(url, contentType, body)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	defer response.Body.Close()
 	bodyStr, err := ioutil.ReadAll(response.Body)
@@ -148,6 +150,22 @@ func (wc *WriteCounter) Write(p []byte) (int, error) {
 	return n, nil
 }
 
+// WriteCounter counts the number of bytes written to it.
+type PutWriteCounter struct {
+	Total uint64 // Total # of bytes written
+	Size  uint64
+	Part  string
+}
+
+func (wc *PutWriteCounter) Write(p []byte) (int, error) {
+	n := len(p)
+	wc.Total += uint64(n)
+	var per float64 = float64(wc.Total) / float64(wc.Size)
+	var i int = int(per * 100)
+	fmt.Printf("\r%s%d%% %s %s", util.Bar(i, 25), i, util.ByteFormat(wc.Total), wc.Part)
+	return n, nil
+}
+
 func Download(url string, saveas string, size uint64, hash string) {
 	start := time.Now()
 	res, err := http.Get(url)
@@ -173,10 +191,6 @@ func Download(url string, saveas string, size uint64, hash string) {
 	speed := float64(size/1024) / end.Seconds()
 	fmt.Printf("\n下载完毕,耗时%s,%.2fKB/s,校验MD5中...\n", end.String(), speed)
 	util.PrintMd5(saveas)
-}
-
-func DownloadPlay(url string, saveas string, size uint64, hash string) {
-	fmt.Println(url)
 }
 
 var playNo uint64 = 0

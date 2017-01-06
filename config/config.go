@@ -49,17 +49,26 @@ func LoadConfig() Config {
 
 }
 
-func ConfigSet(key string, value string) {
-	fmt.Println(key)
-	fmt.Println(value)
+func (cfg *Config) getToken() string {
+	return cfg.Token
 }
 
-func ConfigGet(key string) {
+func (cfg *Config) setToken(token string) {
+	cfg.Token = token
+}
 
+func ConfigSet(value string) {
+	Cfg.setToken(value)
+	SaveConfig()
+}
+
+func ConfigGet() {
+	fmt.Println("Token:" + Cfg.getToken())
 }
 
 func ConfigList() {
-
+	fmt.Println("Root:" + Cfg.Root)
+	fmt.Println("Path:" + Cfg.Path)
 }
 
 func SaveConfig() {
@@ -83,5 +92,5 @@ func SaveConfig() {
 }
 
 func Error() {
-
+	fmt.Println("Config error")
 }

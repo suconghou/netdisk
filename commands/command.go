@@ -51,7 +51,7 @@ func Mv() {
 			fslayer.MoveFile(source, target)
 		}
 	} else {
-
+		fmt.Println("arguements error")
 	}
 
 }
@@ -103,9 +103,10 @@ func Put() {
 	if len(os.Args) >= 3 {
 		var path string = absLocalPath(os.Args[2])
 		var savePath string = absPath(os.Args[2])
-		if util.FileOk(path) {
+		fileSize := util.FileOk(path)
+		if fileSize > 1 {
 			var ondup string = util.BoolString(len(os.Args) >= 4, "overwrite", "newcopy")
-			fslayer.PutFile(path, savePath, ondup)
+			fslayer.PutFile(path, savePath, fileSize, ondup)
 		} else {
 			fmt.Println(path + "不存在或不可读")
 		}
@@ -186,16 +187,16 @@ func Play() {
 }
 
 func Help() {
-
+	fmt.Println(os.Args[0] + " ls info mv get put wget play rm mkdir pwd hash config")
 }
 
 func Config() {
 	if (len(os.Args) == 2) || (os.Args[2] == "list") {
 		config.ConfigList()
-	} else if len(os.Args) == 4 && os.Args[2] == "get" {
-		config.ConfigGet(os.Args[3])
-	} else if len(os.Args) == 5 && os.Args[2] == "set" {
-		config.ConfigSet(os.Args[3], os.Args[4])
+	} else if len(os.Args) == 3 && os.Args[2] == "get" {
+		config.ConfigGet()
+	} else if len(os.Args) == 4 && os.Args[2] == "set" {
+		config.ConfigSet(os.Args[3])
 	} else {
 		config.Error()
 	}
@@ -216,9 +217,7 @@ func Task() {
 }
 
 func Usage() {
-
-	fmt.Println("ls cd rm get put hash ")
-
+	fmt.Println(os.Args[0] + " ls info mv get put wget play rm mkdir pwd hash config")
 }
 
 func Daemon() {

@@ -78,7 +78,7 @@ func Bar(vl int, width int) string {
 	return fmt.Sprintf("%s %s", strings.Repeat("█", vl/(100/width)), strings.Repeat(" ", width-vl/(100/width)))
 }
 
-func FileOk(filePath string) bool {
+func FileOk(filePath string) uint64 {
 	file, err := os.Open(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -91,10 +91,18 @@ func FileOk(filePath string) bool {
 			panic(err)
 		}
 	} else {
-		md5h := md5.New()
-		io.Copy(md5h, file)
-		fmt.Printf("%s   %x\n", filePath, md5h.Sum([]byte(""))) //md5
-		return true
+		defer file.Close()
+		stat, err := os.Stat(filePath)
+		if err != nil {
+			panic(err)
+		} else {
+			fileSize := uint64(stat.Size())
+			md5h := md5.New()
+			io.Copy(md5h, file)
+			fmt.Printf("%s   %x  %s \n", filePath, md5h.Sum([]byte("")), ByteFormat(fileSize)) //md5
+			return fileSize
+		}
+
 	}
-	return false
+	return 0
 }
