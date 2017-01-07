@@ -96,7 +96,6 @@ func GetInfo() {
 	}
 }
 
-//TODO order and limit
 func ListDir(filePath string) bool {
 	absPath := path.Join(config.Cfg.Root, filePath)
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "list", config.Cfg.Token, absPath)
@@ -272,10 +271,6 @@ func Mkdir(path string) {
 	} else {
 		panic(err)
 	}
-}
-
-func Put() {
-	fmt.Println("put")
 }
 
 func DeleteFile(path string) {

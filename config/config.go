@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	_ "flag"
 	"fmt"
 	"io/ioutil"
 	"os"
