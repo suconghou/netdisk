@@ -199,8 +199,8 @@ var waitNo uint64 = 1
 func PlayStream(url string, saveas string, size uint64, hash string) {
 	startTime := time.Now()
 	var playerRun bool = false
-	var thread uint64 = 4
-	var thunkSize uint64 = 1048576
+	var thread uint64 = 5
+	var thunkSize uint64 = 1048576 * 3
 	var startContinue uint64 = 0
 	var forceRange uint64 = 0
 	if len(os.Args) >= 4 {
@@ -215,22 +215,9 @@ func PlayStream(url string, saveas string, size uint64, hash string) {
 			forceRange = matchStart
 			size = matchEnd
 			startContinue = matchStart
-		} else if fl == "-c" {
-			thread = thread * 2
-		} else if fl == "-t" {
-			thunkSize = thunkSize * 5
-		} else if fl == "-f" {
-			thread = thread * 2
-			thunkSize = thunkSize * 5
 		} else {
-
-		}
-	}
-
-	if size < thunkSize*thread {
-		thunkSize = thunkSize / 4
-		if size < thunkSize*thread {
-			thread = thread / 2
+			thread = 9
+			thunkSize = 1048576 * 5
 		}
 	}
 
@@ -265,14 +252,20 @@ func PlayStream(url string, saveas string, size uint64, hash string) {
 	var start uint64 = startContinue
 	var i uint64
 	var chunEnd uint64
+	var startPart uint64 = thunkSize * thread
+	var threadPer uint64 = thread * (thread + 1) / 2
+	var little uint64 = startPart / threadPer
 	for i = 1; i <= thread; i++ {
 		playNo = playNo + 1
-		chunEnd = start + thunkSize*playNo
-		if chunEnd > size {
+		chunEnd = start + playNo*little
+		if chunEnd >= size {
 			chunEnd = size + 1
+			go startPlayChunkDownload(url, saveas, start, chunEnd-1, playNo)
+			break
+		} else {
+			go startPlayChunkDownload(url, saveas, start, chunEnd-1, playNo)
+			start = chunEnd
 		}
-		go startPlayChunkDownload(url, saveas, start, chunEnd-1, playNo)
-		start = chunEnd
 	}
 
 	for {
