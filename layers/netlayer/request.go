@@ -7,13 +7,13 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"netdisk/util"
 	"os"
 	"os/exec"
 	"regexp"
 	"runtime"
 	"strconv"
 	"time"
-	"util"
 )
 
 func Get(url string) []byte {

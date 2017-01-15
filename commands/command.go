@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"netdisk/config"
 	"netdisk/layers/fslayer"
+	"netdisk/util"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-	"util"
 )
 
 func Use() {

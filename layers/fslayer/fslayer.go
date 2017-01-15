@@ -8,11 +8,11 @@ import (
 	"mime/multipart"
 	"netdisk/config"
 	"netdisk/layers/netlayer"
+	"netdisk/util"
 	"os"
 	"path"
 	"strconv"
 	"time"
-	"util"
 )
 
 type PcsRequest struct {
