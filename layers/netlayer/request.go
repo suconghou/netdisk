@@ -16,8 +16,6 @@ import (
 	"util"
 )
 
-var playChan = make(chan uint64)
-
 func Get(url string) []byte {
 	response, err := http.Get(url)
 	if err != nil {
@@ -107,7 +105,7 @@ func Download(url string, saveas string, size uint64, hash string) {
 
 func WgetDownload(url string, saveas string, size uint64, hash string) {
 	var thread uint8 = 4
-	var thunk uint32 = 1048576*2
+	var thunk uint32 = 1048576 * 2
 	start := fastload.GetContinue(saveas)
 	end := size
 	fmt.Printf("下载中...线程%d,分块大小%dKB\n", thread, thunk/1024)
@@ -117,7 +115,7 @@ func WgetDownload(url string, saveas string, size uint64, hash string) {
 		util.PrintMd5(saveas)
 		os.Exit(0)
 	} else {
-		fastload.Load(url, saveas, start, end, thread, thunk,nil)
+		fastload.Load(url, saveas, start, end, thread, thunk, nil)
 	}
 	endTime := time.Since(startTime)
 	speed := float64((size-start)/1024) / endTime.Seconds()
@@ -157,13 +155,13 @@ func PlayStream(url string, saveas string, size uint64, hash string) {
 		util.PrintMd5(saveas)
 		os.Exit(0)
 	} else {
-		var playerRun bool =false
-		fastload.Load(url, saveas, start, end, thread, thunk,func (percent int,downloaded uint64) {
+		var playerRun bool = false
+		fastload.Load(url, saveas, start, end, thread, thunk, func(percent int, downloaded uint64) {
 			if percent > 5 && !playerRun {
-				playerRun=true
+				playerRun = true
 				callPlayer(saveas)
 			}
-		});
+		})
 	}
 	endTime := time.Since(startTime)
 	speed := float64((size-start)/1024) / endTime.Seconds()
