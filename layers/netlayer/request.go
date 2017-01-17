@@ -104,7 +104,7 @@ func Download(url string, saveas string, size uint64, hash string) {
 }
 
 func WgetDownload(url string, saveas string, size uint64, hash string) {
-	var thread uint8 = 4
+	var thread uint8 = 8
 	var thunk uint32 = 1048576 * 2
 	start := fastload.GetContinue(saveas)
 	end := size
