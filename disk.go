@@ -52,6 +52,8 @@ func cli() {
 		commands.Config()
 	case "task":
 		commands.Task()
+	case "serve":
+		commands.Serve()
 	default:
 		commands.Usage()
 	}

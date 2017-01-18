@@ -1,13 +1,16 @@
 package commands
 
 import (
+	"flag"
 	"fmt"
+	"net/http"
 	"netdisk/config"
 	"netdisk/layers/fslayer"
 	"netdisk/util"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -214,6 +217,44 @@ func Task() {
 	} else {
 		config.Error()
 	}
+}
+
+func Serve() {
+	var (
+		port int
+		root string
+	)
+	var ferr flag.ErrorHandling
+	var CommandLine = flag.NewFlagSet(os.Args[0], ferr)
+	CommandLine.IntVar(&port, "p", 6060, "http server port")
+	CommandLine.StringVar(&root, "d", "./", "root document dir")
+	err := CommandLine.Parse(os.Args[2:])
+	if err != nil {
+		os.Exit(2)
+	}
+	pwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	var doc string
+	if path.IsAbs(root) {
+		doc = root
+	} else {
+		doc = path.Join(pwd, root)
+	}
+	if _, err := os.Stat(doc); err == nil {
+		fmt.Println("Server listening on port " + strconv.Itoa(port))
+		fmt.Println("Document root " + doc)
+		error := http.ListenAndServe(":"+strconv.Itoa(port), http.FileServer(http.Dir(doc)))
+		if error != nil {
+			fmt.Println("Error listening:", error.Error())
+			os.Exit(1)
+		}
+	} else {
+		fmt.Println(doc + " not exists")
+	}
+
 }
 
 func Usage() {
