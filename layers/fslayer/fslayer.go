@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/suconghou/fastload/fastload"
 	"io"
 	"mime/multipart"
 	"netdisk/config"
@@ -134,16 +135,18 @@ func Wget(filePath string, dist string, size uint64, hash string) {
 }
 
 func WgetUrl(url string, dist string) {
-	size := netlayer.GetUrlInfo(url)
+	size := fastload.GetUrlInfo(url)
 	if size > 1 {
 		fmt.Println(dist + " " + util.ByteFormat(size))
 		var hash string = ""
 		netlayer.WgetDownload(url, dist, size, hash)
+	} else {
+		fmt.Println("远程文件大小未知")
 	}
 }
 
 func PlayUrl(url string, dist string) {
-	size := netlayer.GetUrlInfo(url)
+	size := fastload.GetUrlInfo(url)
 	if size > 1 {
 		fmt.Println(dist + " " + util.ByteFormat(size))
 		var hash string = ""
@@ -156,8 +159,8 @@ func GetPlayStream(filePath string, dist string, size uint64, hash string) {
 	netlayer.PlayStream(url, dist, size, hash)
 }
 
-func GetFileInfo(path string, noprint bool) (bool, uint64, string) {
-	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "meta", config.Cfg.Token, path)
+func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
+	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "meta", config.Cfg.Token, filePath)
 	str := netlayer.Get(url)
 	info := &PcsFileMetaList{}
 	err := json.Unmarshal([]byte(str), &info)
@@ -166,7 +169,7 @@ func GetFileInfo(path string, noprint bool) (bool, uint64, string) {
 		os.Exit(1)
 	} else {
 		if len(info.List) == 0 {
-			fmt.Println(path + " 不存在")
+			fmt.Println(filePath + " 不存在")
 			os.Exit(2)
 		}
 		item := info.List[0]
@@ -201,6 +204,9 @@ func GetFileInfo(path string, noprint bool) (bool, uint64, string) {
 
 		if !noprint {
 			fmt.Println(b.String())
+			if len(os.Args) == 4 && os.Args[3] == "-i" {
+				fmt.Println(fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "download", config.Cfg.Token, filePath))
+			}
 		}
 		return true, item.Size, md5
 	}

@@ -5,7 +5,6 @@ import (
 	"github.com/suconghou/fastload/fastload"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"netdisk/util"
 	"os"
@@ -222,20 +221,4 @@ func getRange(str string, start uint64, end uint64) (bool, uint64, uint64) {
 	}
 	return matched, matchStart, matchEnd
 
-}
-
-func GetUrlInfo(url string) uint64 {
-	var sourceSize uint64 = 0
-	response, err := http.Head(url)
-	if err != nil {
-		log.Println("Error while downloading", url, ":", err)
-		os.Exit(1)
-	}
-	if response.StatusCode != http.StatusOK {
-		log.Println("Server return non-200 status: %v\n", response.Status)
-		os.Exit(1)
-	}
-	length, _ := strconv.Atoi(response.Header.Get("Content-Length"))
-	sourceSize = uint64(length)
-	return sourceSize
 }
