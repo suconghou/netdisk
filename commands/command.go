@@ -258,7 +258,11 @@ func Serve() {
 }
 
 func Usage() {
-	fmt.Println(os.Args[0] + " ls info mv get put wget play rm mkdir pwd hash config")
+	if len(os.Args) > 1 && os.Args[1] == "-v" {
+		fmt.Println(os.Args[0] + " version: " + config.Version)
+	} else {
+		fmt.Println(os.Args[0] + " ls info mv get put wget play rm mkdir pwd hash config")
+	}
 }
 
 func Daemon() {

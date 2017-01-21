@@ -71,7 +71,7 @@ func (wc *PutWriteCounter) Write(p []byte) (int, error) {
 	wc.Total += uint64(n)
 	var per float64 = float64(wc.Total) / float64(wc.Size)
 	var i int = int(per * 100)
-	fmt.Printf("\r%s%d%% %s %s", util.Bar(i, 25), i, util.ByteFormat(wc.Total), wc.Part)
+	fmt.Printf("\r%s%d%% %s %s  ", util.Bar(i, 25), i, util.ByteFormat(wc.Total), wc.Part)
 	return n, nil
 }
 
