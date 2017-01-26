@@ -26,6 +26,8 @@ func cli() {
 		commands.Cd()
 	case "pwd":
 		commands.Pwd()
+	case "cp":
+		commands.Cp()
 	case "mv":
 		commands.Mv()
 	case "mkdir":
@@ -52,6 +54,10 @@ func cli() {
 		commands.Config()
 	case "task":
 		commands.Task()
+	case "search":
+		commands.Search()
+	case "empty":
+		commands.Empty()
 	case "serve":
 		commands.Serve()
 	default:

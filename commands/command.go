@@ -56,7 +56,19 @@ func Mv() {
 	} else {
 		fmt.Println("arguements error")
 	}
+}
 
+func Cp() {
+	if len(os.Args) == 4 {
+		var source string = absPath(os.Args[2])
+		var target string = absPath(os.Args[3])
+		ok, _, _ := fslayer.GetFileInfo(source, false)
+		if ok {
+			fslayer.CopyFile(source, target)
+		}
+	} else {
+		fmt.Println("arguements error")
+	}
 }
 
 func Mkdir() {
@@ -106,9 +118,11 @@ func Put() {
 	if len(os.Args) >= 3 {
 		var path string = absLocalPath(os.Args[2])
 		var savePath string = absPath(os.Args[2])
-		fileSize := util.FileOk(path)
-		if fileSize > 1 {
-			var ondup string = util.BoolString(len(os.Args) >= 4, "overwrite", "newcopy")
+		fileSize, md5Str := util.FileOk(path)
+		var ondup string = util.BoolString(len(os.Args) >= 4, "overwrite", "newcopy")
+		if fileSize > 262144 {
+			fslayer.PutFileRapid(path, savePath, fileSize, ondup, md5Str)
+		} else if fileSize > 1 {
 			fslayer.PutFile(path, savePath, fileSize, ondup)
 		} else {
 			fmt.Println(path + "不存在或不可读")
@@ -217,6 +231,16 @@ func Task() {
 	} else {
 		config.Error()
 	}
+}
+
+func Search() {
+	if len(os.Args) == 3 {
+		fslayer.SearchFile(os.Args[2])
+	}
+}
+
+func Empty() {
+	fslayer.Empty()
 }
 
 func Serve() {

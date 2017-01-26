@@ -2,7 +2,9 @@ package util
 
 import (
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"math"
 	"os"
@@ -78,7 +80,7 @@ func Bar(vl int, width int) string {
 	return fmt.Sprintf("%s %s", strings.Repeat("█", vl/(100/width)), strings.Repeat(" ", width-vl/(100/width)))
 }
 
-func FileOk(filePath string) uint64 {
+func FileOk(filePath string) (uint64, string) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -99,10 +101,36 @@ func FileOk(filePath string) uint64 {
 			fileSize := uint64(stat.Size())
 			md5h := md5.New()
 			io.Copy(md5h, file)
-			fmt.Printf("%s   %x  %s \n", filePath, md5h.Sum([]byte("")), ByteFormat(fileSize)) //md5
-			return fileSize
+			md5Str := hex.EncodeToString(md5h.Sum([]byte("")))
+			fmt.Printf("%s  %s  %s \n", filePath, md5Str, ByteFormat(fileSize)) //md5
+			return fileSize, md5Str
 		}
 
 	}
-	return 0
+	return 0, ""
+}
+
+func GetCrc32AndMd5(filePath string) (string, string) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println(err)
+			os.Exit(1)
+		} else if os.IsPermission(err) {
+			fmt.Println(err)
+			os.Exit(1)
+		} else {
+			panic(err)
+		}
+	} else {
+		defer file.Close()
+		crc32h := crc32.NewIEEE()
+		data := make([]byte, 262144)
+		io.Copy(crc32h, file)
+		file.ReadAt(data, 0)
+		crc32Str := hex.EncodeToString(crc32h.Sum(nil))
+		md5Str := fmt.Sprintf("%x", md5.Sum(data))
+		return crc32Str, md5Str
+	}
+	return "", ""
 }

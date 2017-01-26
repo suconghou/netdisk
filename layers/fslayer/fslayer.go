@@ -264,6 +264,32 @@ func PutFile(filePath string, savePath string, fileSize uint64, ondup string) {
 
 }
 
+func PutFileRapid(filePath string, savePath string, fileSize uint64, ondup string, md5Str string) {
+	startTime := time.Now()
+	contentCrc32, sliceMd5 := util.GetCrc32AndMd5(filePath)
+	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s&content-length=%d&content-md5=%s&slice-md5=%s&content-crc32=%s&ondup=%s", "rapidupload", config.Cfg.Token, savePath, fileSize, md5Str, sliceMd5, contentCrc32, ondup)
+	str := netlayer.PostWait(url, "application/x-www-form-urlencoded", nil)
+	info := &UpFileInfo{}
+	err := json.Unmarshal(str, &info)
+	if err != nil {
+		panic(err)
+	} else if info.Fs_id > 1 {
+		endTime := time.Since(startTime).Seconds()
+		speed := float64(fileSize/1024) / endTime
+		b := bytes.Buffer{}
+		b.WriteString("已保存为:" + info.Path)
+		b.WriteString("\n文件大小:" + util.ByteFormat(info.Size))
+		b.WriteString("\n文件标识:" + strconv.FormatUint(info.Fs_id, 10))
+		b.WriteString("\n创建时间:" + time.Unix(int64(info.Ctime), 0).Format("2006/01/02 15:04:05"))
+		b.WriteString("\n修改时间:" + time.Unix(int64(info.Mtime), 0).Format("2006/01/02 15:04:05"))
+		b.WriteString("\n文件哈希:" + info.Md5)
+		b.WriteString("\n耗时:" + fmt.Sprintf("%.1fs,秒传,速度:%.2fKB/s", endTime, speed))
+		fmt.Println(b.String())
+	} else {
+		PutFile(filePath, savePath, fileSize, ondup)
+	}
+}
+
 func Mkdir(path string) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "mkdir", config.Cfg.Token, path)
 	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
@@ -299,6 +325,55 @@ func MoveFile(source string, target string) {
 		panic(err)
 	}
 	fmt.Println(util.BoolString(info.Request_id > 1, "已移动", "未移动"))
+}
+
+func CopyFile(source string, target string) {
+	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&from=%s&to=%s", "copy", config.Cfg.Token, source, target)
+	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
+	info := &PcsRequest{}
+	err := json.Unmarshal(str, &info)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(util.BoolString(info.Request_id > 1, "已复制", "未复制"))
+}
+
+func SearchFile(fileName string) {
+	var re int = 1
+	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s&wd=%s&re=%s", "search", config.Cfg.Token, config.Cfg.Root, fileName, re)
+	str := netlayer.Get(url)
+	info := &PcsFileList{}
+	err := json.Unmarshal(str, &info)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	} else {
+		b := bytes.Buffer{}
+		var total uint64 = 0
+		for _, item := range info.List {
+			total = total + item.Size
+			b.WriteString("\n")
+			b.WriteString(util.StringPad(util.DateFormat(item.Ctime), 10))
+			b.WriteString(util.StringPad(util.DateFormat(item.Mtime), 10))
+			b.WriteString(util.StringPad(util.ByteFormat(item.Size), 10))
+			b.WriteString(util.StringPad(fmt.Sprintf("%s@%d", util.BoolString(item.IsDir == 0, "f", "d"), item.Fs_id), 20))
+			b.WriteString(util.StringPad(item.Path, 20))
+		}
+		fmt.Print(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + "  ➜  " + fileName + " " + util.ByteFormat(total))
+		fmt.Println(b.String())
+	}
+
+}
+
+func Empty() {
+	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&type=%s", "delete", config.Cfg.Token, "recycle")
+	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
+	info := &PcsRequest{}
+	err := json.Unmarshal(str, &info)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(util.BoolString(info.Request_id > 1, "已清空回收站", "未清空回收站"))
 }
 
 func GetTaskList() {

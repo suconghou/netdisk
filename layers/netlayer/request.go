@@ -43,6 +43,21 @@ func Post(url string, contentType string, body io.Reader) []byte {
 	return bodyStr
 }
 
+func PostWait(url string, contentType string, body io.Reader) []byte {
+	response, err := http.Post(url, contentType, body)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer response.Body.Close()
+	time.Sleep(time.Second)
+	bodyStr, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		panic(err)
+	}
+	return bodyStr
+}
+
 // WriteCounter counts the number of bytes written to it.
 type WriteCounter struct {
 	Total uint64 // Total # of bytes written
