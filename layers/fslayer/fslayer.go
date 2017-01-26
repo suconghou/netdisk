@@ -76,6 +76,50 @@ type UpFileInfo struct {
 type AddTaskRet struct {
 	Task_id    uint64
 	Request_id uint64
+	Rapid_download uint8
+}
+
+type TaskItem struct {
+	Task_id     string
+	Od_type     string
+	Source_url  string
+	Save_path   string
+	Rate_limit  string
+	Timeout     string
+	Status      string
+	Create_time string
+	Task_name   string
+}
+
+type TaskDetailFile struct {
+	File_name string
+	File_size string
+}
+
+type TaskDetail struct {
+	Status        string
+	File_size     string
+	Finished_size string
+	Create_time   string
+	Start_time    string
+	Finish_time   string
+	Save_path     string
+	Source_url    string
+	Task_name     string
+	Od_type       string
+	File_list     []TaskDetailFile
+	Rresult       int
+}
+
+type TaskDetailList struct {
+	Task_info  map[string]TaskDetail
+	Request_id uint64
+}
+
+type TaskList struct {
+	Task_info  []TaskItem
+	Total      uint32
+	Request_id uint64
 }
 
 func GetInfo() {
@@ -377,17 +421,35 @@ func Empty() {
 }
 
 func GetTaskList() {
-	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/services/cloud_dl?method=%s&access_token=%s", "list_task", config.Cfg.Token)
+	url := fmt.Sprintf("https://pan.baidu.com/rest/2.0/services/cloud_dl?method=%s&access_token=%s&status=255&app_id=250528&need_task_info=1", "list_task", config.Cfg.Token)
 	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
-	os.Stdout.Write(str)
+	info := &TaskList{}
+	err := json.Unmarshal(str, &info)
+	if err != nil {
+		os.Stdout.Write(str)
+		panic(err)
+	} else {
+		b := bytes.Buffer{}
+		for _, item := range info.Task_info {
+			create_time, _ := strconv.Atoi(item.Create_time)
+			b.WriteString(fmt.Sprintf("\n%s@%s %s", item.Task_id, item.Task_name, util.DateFormat(uint64(create_time))))
+			b.WriteString(fmt.Sprintf("\n%s ➜ %s\n", item.Source_url, item.Save_path))
+		}
+		fmt.Print(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + fmt.Sprintf("  ➜  离线任务: %d个任务", info.Total))
+		fmt.Println(b.String())
+	}
 }
 
 func AddTask(savePath string, sourceUrl string) {
-	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/services/cloud_dl?method=%s&access_token=%s&save_path=%s&source_url=%s", "add_task", config.Cfg.Token, savePath, sourceUrl)
+	url := fmt.Sprintf("https://pan.baidu.com/rest/2.0/services/cloud_dl?method=%s&access_token=%s&save_path=%s&source_url=%s&app_id=250528", "add_task", config.Cfg.Token, savePath, sourceUrl)
 	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
 	info := &AddTaskRet{}
 	if err := json.Unmarshal(str, &info); err == nil {
 		fmt.Println("任务ID:" + strconv.FormatUint(info.Task_id, 10))
+		if(info.Rapid_download==1){
+			fmt.Println("离线已秒杀:"+savePath)
+			GetFileInfo(savePath,false)
+		}
 	} else {
 		fmt.Println(err)
 	}
@@ -398,5 +460,29 @@ func RemoveTask(id string) {
 }
 
 func GetTaskInfo(ids string) {
+	url := fmt.Sprintf("https://pan.baidu.com/rest/2.0/services/cloud_dl?method=%s&access_token=%s&task_ids=%s&app_id=250528", "query_task", config.Cfg.Token, ids)
+	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
+	info := &TaskDetailList{}
+	err := json.Unmarshal(str, &info)
+	if err != nil {
+		os.Stdout.Write(str)
+		panic(err)
+	} else {
+		b := bytes.Buffer{}
+		for id, item := range info.Task_info {
+			create_time, _ := strconv.Atoi(item.Create_time)
+			start_time, _ := strconv.Atoi(item.Start_time)
+			file_size, _ := strconv.Atoi(item.File_size)
+			finished_size, _ := strconv.Atoi(item.Finished_size)
+			b.WriteString(fmt.Sprintf("文件:%s@%s %s\n", id, item.Task_name, util.DateFormat(uint64(create_time))))
+			b.WriteString(fmt.Sprintf("大小:%s\n", util.ByteFormat(uint64(file_size))))
+			b.WriteString(fmt.Sprintf("开始下载时间:%s\n", util.DateFormat(uint64(start_time))))
+			b.WriteString(fmt.Sprintf("已下载:%s\n", util.ByteFormat(uint64(finished_size))))
+			b.WriteString(fmt.Sprintf("原地址:%s\n", item.Source_url))
+			b.WriteString(fmt.Sprintf("存储为:%s\n", item.Save_path))
+		}
+		fmt.Print(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + "  ➜  任务详情: \n")
+		fmt.Println(b.String())
+	}
 
 }
