@@ -134,3 +134,12 @@ func GetCrc32AndMd5(filePath string) (string, string) {
 	}
 	return "", ""
 }
+
+func HasFlag(flag string) bool {
+	for _, item := range os.Args {
+		if item == flag {
+			return true
+		}
+	}
+	return false
+}

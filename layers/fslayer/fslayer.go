@@ -74,8 +74,8 @@ type UpFileInfo struct {
 }
 
 type AddTaskRet struct {
-	Task_id    uint64
-	Request_id uint64
+	Task_id        uint64
+	Request_id     uint64
 	Rapid_download uint8
 }
 
@@ -189,18 +189,18 @@ func WgetUrl(url string, dist string) {
 	}
 }
 
-func PlayUrl(url string, dist string) {
+func PlayUrl(url string, dist string, stdout bool) {
 	size := fastload.GetUrlInfo(url)
 	if size > 1 {
 		fmt.Println(dist + " " + util.ByteFormat(size))
 		var hash string = ""
-		netlayer.PlayStream(url, dist, size, hash)
+		netlayer.PlayStream(url, dist, size, hash, stdout)
 	}
 }
 
-func GetPlayStream(filePath string, dist string, size uint64, hash string) {
+func GetPlayStream(filePath string, dist string, size uint64, hash string, stdout bool) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "download", config.Cfg.Token, filePath)
-	netlayer.PlayStream(url, dist, size, hash)
+	netlayer.PlayStream(url, dist, size, hash, stdout)
 }
 
 func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
@@ -230,7 +230,6 @@ func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
 		if item.Block_list == "" {
 			b.WriteString("\n包含文件:" + strconv.Itoa(item.Filenum))
 		} else {
-
 			if err := json.Unmarshal([]byte(item.Block_list), &Block_list); err == nil {
 				if len(Block_list) == 1 {
 					md5 = Block_list[0]
@@ -241,11 +240,9 @@ func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
 					}
 				}
 			} else {
-				fmt.Println(err)
+				panic(err)
 			}
-
 		}
-
 		if !noprint {
 			fmt.Println(b.String())
 			if len(os.Args) == 4 && os.Args[3] == "-i" {
@@ -446,9 +443,9 @@ func AddTask(savePath string, sourceUrl string) {
 	info := &AddTaskRet{}
 	if err := json.Unmarshal(str, &info); err == nil {
 		fmt.Println("任务ID:" + strconv.FormatUint(info.Task_id, 10))
-		if(info.Rapid_download==1){
-			fmt.Println("离线已秒杀:"+savePath)
-			GetFileInfo(savePath,false)
+		if info.Rapid_download == 1 {
+			fmt.Println("离线已秒杀:" + savePath)
+			GetFileInfo(savePath, false)
 		}
 	} else {
 		fmt.Println(err)

@@ -129,16 +129,15 @@ func WgetDownload(url string, saveas string, size uint64, hash string) {
 		util.PrintMd5(saveas)
 		os.Exit(0)
 	} else {
-		fastload.Load(url, saveas, start, end, thread, thunk, nil)
+		fastload.Load(url, saveas, start, end, thread, thunk, false, nil)
 	}
 	endTime := time.Since(startTime)
 	speed := float64((size-start)/1024) / endTime.Seconds()
 	fmt.Printf("\n下载完毕,耗时%s,%.2fKB/s,校验MD5中...\n", endTime.String(), speed)
 	util.PrintMd5(saveas)
-
 }
 
-func PlayStream(url string, saveas string, size uint64, hash string) {
+func PlayStream(url string, saveas string, size uint64, hash string, stdout bool) {
 	var thread uint8 = 4
 	var thunk uint32 = 1048576 * 2
 	var startContinue uint64 = 0
@@ -162,25 +161,31 @@ func PlayStream(url string, saveas string, size uint64, hash string) {
 	} else {
 		start = fastload.GetContinue(saveas)
 	}
-	fmt.Printf("下载中...线程%d,分块大小%dKB\n", thread, thunk/1024)
+	if !stdout {
+		fmt.Printf("下载中...线程%d,分块大小%dKB\n", thread, thunk/1024)
+	}
 	startTime := time.Now()
 	if start >= size {
-		fmt.Println("\n已下载完毕,校验MD5中...")
-		util.PrintMd5(saveas)
+		if !stdout {
+			fmt.Printf("\n已下载完毕,校验MD5中...\n")
+			util.PrintMd5(saveas)
+		}
 		os.Exit(0)
 	} else {
 		var playerRun bool = false
-		fastload.Load(url, saveas, start, end, thread, thunk, func(percent int, downloaded uint64) {
+		fastload.Load(url, saveas, start, end, thread, thunk, stdout, func(percent int, downloaded uint64) {
 			if percent > 5 && !playerRun {
 				playerRun = true
 				callPlayer(saveas)
 			}
 		})
 	}
-	endTime := time.Since(startTime)
-	speed := float64((size-start)/1024) / endTime.Seconds()
-	fmt.Printf("\n下载完毕,耗时%s,%.2fKB/s,校验MD5中...\n", endTime.String(), speed)
-	util.PrintMd5(saveas)
+	if !stdout {
+		endTime := time.Since(startTime)
+		speed := float64((size-start)/1024) / endTime.Seconds()
+		fmt.Printf("\n下载完毕,耗时%s,%.2fKB/s %s \n", endTime.String(), speed, util.BoolString(stdout, "", ",校验MD5中..."))
+		util.PrintMd5(saveas)
+	}
 }
 
 func callPlayer(file string) {

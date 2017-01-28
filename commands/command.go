@@ -136,7 +136,7 @@ func Wget() {
 	if len(os.Args) >= 3 {
 		var filePath = absPath(os.Args[2])
 		var dist string = ""
-		if len(os.Args) >= 4 {
+		if len(os.Args) >= 4 && (!strings.Contains(os.Args[3], "-")) {
 			dist = absLocalPath(os.Args[3])
 		} else {
 			dist = absLocalPath(path.Base(filePath))
@@ -180,26 +180,25 @@ func Hash() {
 
 func Play() {
 	if len(os.Args) >= 3 {
-
 		var filePath = absPath(os.Args[2])
 		var dist string = ""
 		if len(os.Args) >= 4 && (!strings.Contains(os.Args[3], "-")) {
-			dist = filepath.Clean(os.Args[3])
+			dist = absLocalPath(os.Args[3])
 		} else {
 			dist = absLocalPath(path.Base(filePath))
 		}
+		stdout := util.HasFlag("--stdout")
 		if strings.HasPrefix(os.Args[2], "http://") || strings.HasPrefix(os.Args[2], "https://") {
 			tokens := strings.Split(dist, "?")
-			fslayer.PlayUrl(os.Args[2], tokens[0])
+			fslayer.PlayUrl(os.Args[2], tokens[0], stdout)
 		} else {
-			ok, size, hash := fslayer.GetFileInfo(filePath, false)
+			ok, size, hash := fslayer.GetFileInfo(filePath, stdout)
 			if ok {
-				fslayer.GetPlayStream(filePath, dist, size, hash)
+				fslayer.GetPlayStream(filePath, dist, size, hash, stdout)
 			}
 		}
-
 	} else {
-		fmt.Println("Usage get filepath saveas")
+		fmt.Println("Usage play filepath or url")
 	}
 }
 
