@@ -166,12 +166,13 @@ func PlayStream(url string, saveas string, size uint64, hash string, stdout bool
 	}
 	startTime := time.Now()
 	if start >= size {
-		if !stdout {
-			fmt.Printf("\n已下载完毕,校验MD5中...\n")
-			util.PrintMd5(saveas)
-		}
+		fmt.Printf("\n已下载完毕,校验MD5中...\n")
+		util.PrintMd5(saveas)
 		os.Exit(0)
 	} else {
+		if stdout && (start != 0) {
+			fastload.CopyToStdOut(saveas)
+		}
 		var playerRun bool = false
 		fastload.Load(url, saveas, start, end, thread, thunk, stdout, func(percent int, downloaded uint64) {
 			if percent > 5 && !playerRun {
