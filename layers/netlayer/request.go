@@ -139,7 +139,7 @@ func WgetDownload(url string, saveas string, size uint64, hash string) {
 
 func PlayStream(url string, saveas string, size uint64, hash string, stdout bool) {
 	var thread uint8 = 4
-	var thunk uint32 = 1048576 * 2
+	var thunk uint32 = 524288 * 4
 	var startContinue uint64 = 0
 	if len(os.Args) >= 4 {
 		var fl string
@@ -170,9 +170,6 @@ func PlayStream(url string, saveas string, size uint64, hash string, stdout bool
 		util.PrintMd5(saveas)
 		os.Exit(0)
 	} else {
-		if stdout && (start != 0) {
-			fastload.CopyToStdOut(saveas)
-		}
 		var playerRun bool = false
 		fastload.Load(url, saveas, start, end, thread, thunk, stdout, func(percent int, downloaded uint64) {
 			if percent > 5 && !playerRun {
