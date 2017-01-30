@@ -18,7 +18,7 @@ import (
 func Get(url string) []byte {
 	response, err := http.Get(url)
 	if err != nil {
-		fmt.Println(err)
+		os.Stderr.Write([]byte(fmt.Sprintf("%s",err)))
 		os.Exit(1)
 	}
 	defer response.Body.Close()
@@ -32,7 +32,7 @@ func Get(url string) []byte {
 func Post(url string, contentType string, body io.Reader) []byte {
 	response, err := http.Post(url, contentType, body)
 	if err != nil {
-		fmt.Println(err)
+		os.Stderr.Write([]byte(fmt.Sprintf("%s",err)))
 		os.Exit(1)
 	}
 	defer response.Body.Close()
@@ -46,7 +46,7 @@ func Post(url string, contentType string, body io.Reader) []byte {
 func PostWait(url string, contentType string, body io.Reader) []byte {
 	response, err := http.Post(url, contentType, body)
 	if err != nil {
-		fmt.Println(err)
+		os.Stderr.Write([]byte(fmt.Sprintf("%s",err)))
 		os.Exit(1)
 	}
 	defer response.Body.Close()
