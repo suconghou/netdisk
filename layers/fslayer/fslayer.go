@@ -213,7 +213,7 @@ func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
 		os.Exit(1)
 	} else {
 		if len(info.List) == 0 {
-			fmt.Println(filePath + " 不存在")
+			os.Stderr.Write([]byte(filePath + " 不存在\n"))
 			os.Exit(2)
 		}
 		item := info.List[0]

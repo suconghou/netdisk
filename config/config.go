@@ -10,7 +10,7 @@ import (
 
 var ConfigPath string = "/etc/disk.json"
 
-var Version string = "0.1"
+var Version string = "0.1.1"
 
 type Config struct {
 	Token string
