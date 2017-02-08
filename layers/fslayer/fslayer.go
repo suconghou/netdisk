@@ -429,8 +429,8 @@ func GetTaskList() {
 		b := bytes.Buffer{}
 		for _, item := range info.Task_info {
 			create_time, _ := strconv.Atoi(item.Create_time)
-			b.WriteString(fmt.Sprintf("\n%s@%s %s", item.Task_id, item.Task_name, util.DateFormat(uint64(create_time))))
-			b.WriteString(fmt.Sprintf("\n%s ➜ %s\n", item.Source_url, item.Save_path))
+			b.WriteString(fmt.Sprintf("\n任务ID:%s\n任务名称:%s\n创建时间:%s", item.Task_id, item.Task_name, util.DateFormat(uint64(create_time))))
+			b.WriteString(fmt.Sprintf("\n源地址:%s \n存储为:%s\n", item.Source_url, item.Save_path))
 		}
 		fmt.Print(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + fmt.Sprintf("  ➜  离线任务: %d个任务", info.Total))
 		fmt.Println(b.String())
@@ -471,10 +471,12 @@ func GetTaskInfo(ids string) {
 			start_time, _ := strconv.Atoi(item.Start_time)
 			file_size, _ := strconv.Atoi(item.File_size)
 			finished_size, _ := strconv.Atoi(item.Finished_size)
-			b.WriteString(fmt.Sprintf("文件:%s@%s %s\n", id, item.Task_name, util.DateFormat(uint64(create_time))))
-			b.WriteString(fmt.Sprintf("大小:%s\n", util.ByteFormat(uint64(file_size))))
+			b.WriteString(fmt.Sprintf("任务ID:%s\n", id))
+			b.WriteString(fmt.Sprintf("任务名称:%s\n", item.Task_name))
+			b.WriteString(fmt.Sprintf("创建时间:%s\n", util.DateFormat(uint64(create_time))))
 			b.WriteString(fmt.Sprintf("开始下载时间:%s\n", util.DateFormat(uint64(start_time))))
-			b.WriteString(fmt.Sprintf("已下载:%s\n", util.ByteFormat(uint64(finished_size))))
+			b.WriteString(fmt.Sprintf("大小:%s\n", util.ByteFormat(uint64(file_size))))
+			b.WriteString(fmt.Sprintf("已下载:%s (进度:%d%%)\n", util.ByteFormat(uint64(finished_size)), finished_size/file_size*100))
 			b.WriteString(fmt.Sprintf("原地址:%s\n", item.Source_url))
 			b.WriteString(fmt.Sprintf("存储为:%s\n", item.Save_path))
 		}

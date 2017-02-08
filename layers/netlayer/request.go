@@ -18,7 +18,7 @@ import (
 func Get(url string) []byte {
 	response, err := http.Get(url)
 	if err != nil {
-		os.Stderr.Write([]byte(fmt.Sprintf("%s",err)))
+		os.Stderr.Write([]byte(fmt.Sprintf("%s", err)))
 		os.Exit(1)
 	}
 	defer response.Body.Close()
@@ -32,7 +32,7 @@ func Get(url string) []byte {
 func Post(url string, contentType string, body io.Reader) []byte {
 	response, err := http.Post(url, contentType, body)
 	if err != nil {
-		os.Stderr.Write([]byte(fmt.Sprintf("%s",err)))
+		os.Stderr.Write([]byte(fmt.Sprintf("%s", err)))
 		os.Exit(1)
 	}
 	defer response.Body.Close()
@@ -46,7 +46,7 @@ func Post(url string, contentType string, body io.Reader) []byte {
 func PostWait(url string, contentType string, body io.Reader) []byte {
 	response, err := http.Post(url, contentType, body)
 	if err != nil {
-		os.Stderr.Write([]byte(fmt.Sprintf("%s",err)))
+		os.Stderr.Write([]byte(fmt.Sprintf("%s", err)))
 		os.Exit(1)
 	}
 	defer response.Body.Close()
@@ -118,8 +118,7 @@ func Download(url string, saveas string, size uint64, hash string) {
 }
 
 func WgetDownload(url string, saveas string, size uint64, hash string) {
-	var thread uint8 = 8
-	var thunk uint32 = 1048576 * 2
+	thread, thunk := getThreadThunk()
 	start := fastload.GetContinue(saveas)
 	end := size
 	fmt.Printf("下载中...线程%d,分块大小%dKB\n", thread, thunk/1024)
@@ -138,8 +137,7 @@ func WgetDownload(url string, saveas string, size uint64, hash string) {
 }
 
 func PlayStream(url string, saveas string, size uint64, hash string, stdout bool) {
-	var thread uint8 = 4
-	var thunk uint32 = 524288 * 4
+	thread, thunk := getThreadThunk()
 	var startContinue uint64 = 0
 	if len(os.Args) >= 4 {
 		var fl string
@@ -215,7 +213,7 @@ func getRange(str string, start uint64, end uint64) (bool, uint64, uint64) {
 			matchEnd = matchEnd * 1048576
 		}
 		if (matchEnd < matchStart) || (matchStart >= end) {
-			fmt.Println("error range")
+			os.Stderr.Write([]byte("error range"))
 			os.Exit(1)
 		} else if matchEnd > end {
 			matchEnd = end
@@ -230,7 +228,7 @@ func getRange(str string, start uint64, end uint64) (bool, uint64, uint64) {
 			matchStart = matchStart * 1048576
 		}
 		if matchStart > end {
-			fmt.Println("error range")
+			os.Stderr.Write([]byte("error range"))
 			os.Exit(1)
 		} else {
 			matchEnd = end
@@ -239,4 +237,20 @@ func getRange(str string, start uint64, end uint64) (bool, uint64, uint64) {
 	}
 	return matched, matchStart, matchEnd
 
+}
+
+func getThreadThunk() (uint8, uint32) {
+	var thread uint8 = 8
+	var thunk uint32 = 524288 * 4
+	if util.HasFlag("--fast") {
+		thread = thread * 2
+	} else if util.HasFlag("--slow") {
+		thread = thread / 2
+	}
+	if util.HasFlag("--thin") {
+		thunk = thunk / 8
+	} else if util.HasFlag("--fat") {
+		thunk = thunk * 4
+	}
+	return thread, thunk
 }
