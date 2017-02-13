@@ -10,7 +10,7 @@ import (
 
 var ConfigPath string = "/etc/disk.json"
 
-var Version string = "0.1.2"
+var Version string = "0.1.3"
 
 type Config struct {
 	Token string
@@ -90,8 +90,4 @@ func SaveConfig() {
 			}
 		}
 	}
-}
-
-func Error() {
-	fmt.Println("Config error")
 }

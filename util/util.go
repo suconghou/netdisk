@@ -56,6 +56,10 @@ func DateFormat(times uint64) string {
 	return str
 }
 
+func DateS(times int64) string {
+	return time.Unix(times, 0).Format("2006/01/02 15:04:05")
+}
+
 func BoolString(b bool, s, s1 string) string {
 	if b {
 		return s

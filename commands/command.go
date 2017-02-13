@@ -37,7 +37,7 @@ func Cd() {
 			config.SaveConfig()
 		}
 	} else {
-		fmt.Println("change dir ")
+		fmt.Println("Usage:disk cd newpath")
 	}
 }
 
@@ -54,7 +54,7 @@ func Mv() {
 			fslayer.MoveFile(source, target)
 		}
 	} else {
-		fmt.Println("arguements error")
+		fmt.Println("Usage:disk mv path newpath")
 	}
 }
 
@@ -67,7 +67,7 @@ func Cp() {
 			fslayer.CopyFile(source, target)
 		}
 	} else {
-		fmt.Println("arguements error")
+		fmt.Println("Usage:disk cp path newpath")
 	}
 }
 
@@ -77,7 +77,7 @@ func Mkdir() {
 		var path string = absPath(os.Args[2])
 		fslayer.Mkdir(path)
 	} else {
-		fmt.Println("mkdir")
+		fmt.Println("Usage:disk mkdir path")
 	}
 
 }
@@ -91,7 +91,7 @@ func Rm() {
 		}
 	} else {
 
-		fmt.Println("rm files")
+		fmt.Println("Usage:disk rm filepath")
 	}
 }
 
@@ -110,7 +110,7 @@ func Get() {
 			fslayer.Get(filePath, dist, size, hash)
 		}
 	} else {
-		fmt.Println("Usage get filepath saveas")
+		fmt.Println("Usage:disk get filepath saveas")
 	}
 }
 
@@ -128,7 +128,7 @@ func Put() {
 			fmt.Println(path + "不存在或不可读")
 		}
 	} else {
-		fmt.Println("Usage put filepath ")
+		fmt.Println("Usage:disk put filepath saveas")
 	}
 }
 
@@ -152,7 +152,7 @@ func Wget() {
 		}
 
 	} else {
-		fmt.Println("Usage get filepath saveas")
+		fmt.Println("Usage:disk wget filepath/url saveas")
 	}
 }
 
@@ -174,7 +174,7 @@ func Hash() {
 		var filePath string = absLocalPath(os.Args[2])
 		util.PrintMd5(filePath)
 	} else {
-		fmt.Println("hash file")
+		fmt.Println("Usage:disk hash file")
 	}
 }
 
@@ -198,12 +198,12 @@ func Play() {
 			}
 		}
 	} else {
-		fmt.Println("Usage play filepath or url")
+		fmt.Println("Usage:disk play filepath/url")
 	}
 }
 
 func Help() {
-	fmt.Println(os.Args[0] + " ls info mv get put wget play rm mkdir pwd hash config")
+	fmt.Println(os.Args[0] + " ls info mv get put wget play rm mkdir pwd hash config search task ")
 }
 
 func Config() {
@@ -214,7 +214,7 @@ func Config() {
 	} else if len(os.Args) == 4 && os.Args[2] == "set" {
 		config.ConfigSet(os.Args[3])
 	} else {
-		config.Error()
+		fmt.Println("Usage:disk config list/get/set")
 	}
 }
 
@@ -228,7 +228,7 @@ func Task() {
 	} else if len(os.Args) == 4 && os.Args[2] == "info" {
 		fslayer.GetTaskInfo(os.Args[3])
 	} else {
-		config.Error()
+		fmt.Println("Usage:disk task list/add/info/remove")
 	}
 }
 

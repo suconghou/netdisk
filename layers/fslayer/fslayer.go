@@ -18,6 +18,8 @@ import (
 
 type PcsRequest struct {
 	Request_id uint64
+	Error_msg  string
+	Error_code int32
 }
 
 type PcsRequestError struct {
@@ -122,6 +124,17 @@ type TaskList struct {
 	Request_id uint64
 }
 
+var taskStatusMap = map[string]string{
+	"0": "下载成功",
+	"1": "下载进行中",
+	"2": "系统错误",
+	"3": "资源不存在",
+	"4": "下载超时",
+	"5": "资源存在但下载失败",
+	"6": "存储空间不足",
+	"7": "任务已取消",
+}
+
 func GetInfo() {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/quota?method=%s&access_token=%s", "info", config.Cfg.Token)
 	str := netlayer.Get(url)
@@ -133,10 +146,9 @@ func GetInfo() {
 	} else {
 		b := bytes.Buffer{}
 		b.WriteString(util.DiskName(config.Cfg.Disk))
-		b.WriteString("\n总大小:")
-		b.WriteString(util.ByteFormat(info.Quota))
-		b.WriteString("\n已使用:")
-		b.WriteString(util.ByteFormat(info.Used))
+		b.WriteString("\n总大小:" + util.ByteFormat(info.Quota))
+		b.WriteString("\n已使用:" + util.ByteFormat(info.Used))
+		b.WriteString(fmt.Sprintf("\n利用率:%.1f%%", float32(info.Used)/float32(info.Quota)*100))
 		fmt.Println(b.String())
 	}
 }
@@ -423,14 +435,14 @@ func GetTaskList() {
 	info := &TaskList{}
 	err := json.Unmarshal(str, &info)
 	if err != nil {
-		os.Stdout.Write(str)
+		os.Stderr.Write(str)
 		panic(err)
 	} else {
 		b := bytes.Buffer{}
 		for _, item := range info.Task_info {
 			create_time, _ := strconv.Atoi(item.Create_time)
-			b.WriteString(fmt.Sprintf("\n任务ID:%s\n任务名称:%s\n创建时间:%s", item.Task_id, item.Task_name, util.DateFormat(uint64(create_time))))
-			b.WriteString(fmt.Sprintf("\n源地址:%s \n存储为:%s\n", item.Source_url, item.Save_path))
+			b.WriteString(fmt.Sprintf("\n任务ID:%s\n任务名称:%s\n创建时间:%s\n任务状态:%s", item.Task_id, item.Task_name, util.DateS(int64(create_time)), showTaskStatus(item.Status)))
+			b.WriteString(fmt.Sprintf("\n源地址:%s \n存储至:%s\n", item.Source_url, item.Save_path))
 		}
 		fmt.Print(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + fmt.Sprintf("  ➜  离线任务: %d个任务", info.Total))
 		fmt.Println(b.String())
@@ -438,14 +450,15 @@ func GetTaskList() {
 }
 
 func AddTask(savePath string, sourceUrl string) {
-	url := fmt.Sprintf("https://pan.baidu.com/rest/2.0/services/cloud_dl?method=%s&access_token=%s&save_path=%s&source_url=%s&app_id=250528", "add_task", config.Cfg.Token, savePath, sourceUrl)
+	url := fmt.Sprintf("https://pan.baidu.com/rest/2.0/services/cloud_dl?method=%s&access_token=%s&save_path=%s/&source_url=%s&app_id=250528", "add_task", config.Cfg.Token, savePath, sourceUrl)
 	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
 	info := &AddTaskRet{}
 	if err := json.Unmarshal(str, &info); err == nil {
-		fmt.Println("任务ID:" + strconv.FormatUint(info.Task_id, 10))
+		var taskId string = strconv.FormatUint(info.Task_id, 10)
+		fmt.Println("任务ID:" + taskId)
 		if info.Rapid_download == 1 {
 			fmt.Println("离线已秒杀:" + savePath)
-			GetFileInfo(savePath, false)
+			GetTaskInfo(taskId)
 		}
 	} else {
 		fmt.Println(err)
@@ -453,7 +466,18 @@ func AddTask(savePath string, sourceUrl string) {
 }
 
 func RemoveTask(id string) {
-
+	url := fmt.Sprintf("https://pan.baidu.com/rest/2.0/services/cloud_dl?method=%s&access_token=%s&task_id=%s&app_id=250528", "cancel_task", config.Cfg.Token, id)
+	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
+	info := &PcsRequest{}
+	err := json.Unmarshal(str, &info)
+	if err != nil {
+		panic(err)
+	}
+	if info.Error_msg != "" {
+		os.Stderr.Write([]byte("Error:" + info.Error_msg + "\n"))
+	} else {
+		fmt.Println(util.BoolString(info.Request_id > 1, "已取消任务"+id, "未取消任务"+id))
+	}
 }
 
 func GetTaskInfo(ids string) {
@@ -461,27 +485,45 @@ func GetTaskInfo(ids string) {
 	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
 	info := &TaskDetailList{}
 	err := json.Unmarshal(str, &info)
+	timestamp := time.Now().Unix()
 	if err != nil {
-		os.Stdout.Write(str)
+		os.Stderr.Write(str)
 		panic(err)
 	} else {
 		b := bytes.Buffer{}
 		for id, item := range info.Task_info {
 			create_time, _ := strconv.Atoi(item.Create_time)
 			start_time, _ := strconv.Atoi(item.Start_time)
+			finish_time, _ := strconv.Atoi(item.Finish_time)
 			file_size, _ := strconv.Atoi(item.File_size)
 			finished_size, _ := strconv.Atoi(item.Finished_size)
 			b.WriteString(fmt.Sprintf("任务ID:%s\n", id))
-			b.WriteString(fmt.Sprintf("任务名称:%s\n", item.Task_name))
-			b.WriteString(fmt.Sprintf("创建时间:%s\n", util.DateFormat(uint64(create_time))))
-			b.WriteString(fmt.Sprintf("开始下载时间:%s\n", util.DateFormat(uint64(start_time))))
-			b.WriteString(fmt.Sprintf("大小:%s\n", util.ByteFormat(uint64(file_size))))
-			b.WriteString(fmt.Sprintf("已下载:%s (进度:%d%%)\n", util.ByteFormat(uint64(finished_size)), finished_size/file_size*100))
+			b.WriteString(fmt.Sprintf("任务名称:%s\n任务状态:%s\n", item.Task_name, showTaskStatus(item.Status)))
+			b.WriteString(fmt.Sprintf("创建时间:%s\n", util.DateS(int64(create_time))))
+			b.WriteString(fmt.Sprintf("开始下载时间:%s\n", util.DateS(int64(start_time))))
+			if file_size > 0 { //已探测出文件大小
+				b.WriteString(fmt.Sprintf("大小:%s\n", util.ByteFormat(uint64(file_size))))
+				if finish_time > start_time { //已下载完毕
+					b.WriteString(fmt.Sprintf("任务完成时间:%s 耗时:%d秒 速度:%dKB/s \n", util.DateS(int64(finish_time)), finish_time-start_time, file_size/1024/(finish_time-start_time)))
+				} else if finish_time == start_time {
+					b.WriteString(fmt.Sprintf("任务完成时间:%s 云端已秒杀 \n", util.DateS(int64(finish_time))))
+				} else {
+					b.WriteString(fmt.Sprintf("已下载:%s 进度:%.1f%% 速度:%dKB/s\n", util.ByteFormat(uint64(finished_size)), float32(finished_size)/float32(file_size)*100, finished_size/1024/(int(timestamp)-start_time)))
+				}
+			}
 			b.WriteString(fmt.Sprintf("原地址:%s\n", item.Source_url))
-			b.WriteString(fmt.Sprintf("存储为:%s\n", item.Save_path))
+			b.WriteString(fmt.Sprintf("存储至:%s\n", item.Save_path))
 		}
 		fmt.Print(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + "  ➜  任务详情: \n")
 		fmt.Println(b.String())
 	}
 
+}
+
+func showTaskStatus(status string) string {
+	if v, ok := taskStatusMap[status]; ok {
+		return v
+	} else {
+		return "未知状态"
+	}
 }
