@@ -233,8 +233,8 @@ func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
 		b.WriteString(item.Path)
 		b.WriteString("\n文件大小:" + util.ByteFormat(item.Size))
 		b.WriteString("\n文件标识:" + strconv.FormatUint(item.Fs_id, 10))
-		b.WriteString("\n创建时间:" + time.Unix(int64(item.Ctime), 0).Format("2006/01/02 15:04:05"))
-		b.WriteString("\n修改时间:" + time.Unix(int64(item.Mtime), 0).Format("2006/01/02 15:04:05"))
+		b.WriteString("\n创建时间:" + util.DateS(int64(item.Ctime)))
+		b.WriteString("\n修改时间:" + util.DateS(int64(item.Mtime)))
 		b.WriteString("\n类型:" + util.BoolString(item.Isdir == 0, "文件", "文件夹"))
 		b.WriteString("\n子目录:" + util.BoolString(item.Ifhassubdir == 0, "无", "包含"))
 		var Block_list []string
@@ -268,7 +268,6 @@ func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
 
 func PutFile(filePath string, savePath string, fileSize uint64, ondup string) {
 	startTime := time.Now()
-
 	url := fmt.Sprintf("https://c.pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s&ondup=%s", "upload", config.Cfg.Token, savePath, ondup)
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
@@ -278,7 +277,6 @@ func PutFile(filePath string, savePath string, fileSize uint64, ondup string) {
 		fmt.Println("error writing to buffer")
 		panic(err)
 	}
-
 	//打开文件句柄操作
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -288,7 +286,6 @@ func PutFile(filePath string, savePath string, fileSize uint64, ondup string) {
 	//iocopy
 	counter := &netlayer.PutWriteCounter{}
 	counter.Size = fileSize
-
 	reader := io.TeeReader(file, fileWriter)
 	_, err = io.Copy(counter, reader)
 	if err != nil {
@@ -308,13 +305,12 @@ func PutFile(filePath string, savePath string, fileSize uint64, ondup string) {
 		b.WriteString("\n已保存为:" + info.Path)
 		b.WriteString("\n文件大小:" + util.ByteFormat(info.Size))
 		b.WriteString("\n文件标识:" + strconv.FormatUint(info.Fs_id, 10))
-		b.WriteString("\n创建时间:" + time.Unix(int64(info.Ctime), 0).Format("2006/01/02 15:04:05"))
-		b.WriteString("\n修改时间:" + time.Unix(int64(info.Mtime), 0).Format("2006/01/02 15:04:05"))
+		b.WriteString("\n创建时间:" + util.DateS(int64(info.Ctime)))
+		b.WriteString("\n修改时间:" + util.DateS(int64(info.Mtime)))
 		b.WriteString("\n文件哈希:" + info.Md5)
 		b.WriteString("\n耗时:" + fmt.Sprintf("%.1fs,速度:%.2fKB/s", endTime, speed))
 		fmt.Println(b.String())
 	}
-
 }
 
 func PutFileRapid(filePath string, savePath string, fileSize uint64, ondup string, md5Str string) {
@@ -333,8 +329,8 @@ func PutFileRapid(filePath string, savePath string, fileSize uint64, ondup strin
 		b.WriteString("已保存为:" + info.Path)
 		b.WriteString("\n文件大小:" + util.ByteFormat(info.Size))
 		b.WriteString("\n文件标识:" + strconv.FormatUint(info.Fs_id, 10))
-		b.WriteString("\n创建时间:" + time.Unix(int64(info.Ctime), 0).Format("2006/01/02 15:04:05"))
-		b.WriteString("\n修改时间:" + time.Unix(int64(info.Mtime), 0).Format("2006/01/02 15:04:05"))
+		b.WriteString("\n创建时间:" + util.DateS(int64(info.Ctime)))
+		b.WriteString("\n修改时间:" + util.DateS(int64(info.Mtime)))
 		b.WriteString("\n文件哈希:" + info.Md5)
 		b.WriteString("\n耗时:" + fmt.Sprintf("%.1fs,秒传,速度:%.2fKB/s", endTime, speed))
 		fmt.Println(b.String())
