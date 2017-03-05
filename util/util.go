@@ -80,8 +80,10 @@ func PrintMd5(filePath string) {
 }
 
 func Bar(vl int, width int) string {
-
-	return fmt.Sprintf("%s %s", strings.Repeat("█", vl/(100/width)), strings.Repeat(" ", width-vl/(100/width)))
+	var already int = vl / (100 / width)
+	var remain int = width - already
+	fmt.Println(already, remain)
+	return fmt.Sprintf("%s %s", strings.Repeat("█", 0), strings.Repeat(" ", 25))
 }
 
 func FileOk(filePath string) (uint64, string) {
@@ -109,7 +111,6 @@ func FileOk(filePath string) (uint64, string) {
 			fmt.Printf("%s  %s  %s \n", filePath, md5Str, ByteFormat(fileSize)) //md5
 			return fileSize, md5Str
 		}
-
 	}
 	return 0, ""
 }

@@ -58,36 +58,40 @@ func PostWait(url string, contentType string, body io.Reader) []byte {
 	return bodyStr
 }
 
-// WriteCounter counts the number of bytes written to it.
 type WriteCounter struct {
-	Total uint64 // Total # of bytes written
-	Size  uint64
-	Part  string
+	Total     uint64
+	Size      uint64
+	StartTime time.Time
 }
 
 func (wc *WriteCounter) Write(p []byte) (int, error) {
 	n := len(p)
 	wc.Total += uint64(n)
-	var per float64 = float64(wc.Total) / float64(wc.Size)
-	var i int = int(per * 100)
-	fmt.Printf("\r%s%d%% %s %s", util.Bar(i, 25), i, util.ByteFormat(wc.Total), wc.Part)
+	var i int = int(float64(wc.Total) / float64(wc.Size) * 100)
+	duration := time.Since(wc.StartTime).Seconds()
+	speed := float64(wc.Total) / 1024 / duration
+	leftTime := float64(wc.Size)/1024/speed - duration
+	fmt.Printf("\r%s%d%% %s %.2fKB/s %.1f %.1f  ", util.Bar(i, 25), i, util.ByteFormat(wc.Total), speed, duration, leftTime)
 	return n, nil
 }
 
-// WriteCounter counts the number of bytes written to it.
-type PutWriteCounter struct {
-	Total uint64 // Total # of bytes written
-	Size  uint64
-	Part  string
+type PutprogressReporter struct {
+	R         io.Reader
+	Total     uint64
+	Size      uint64
+	StartTime time.Time
 }
 
-func (wc *PutWriteCounter) Write(p []byte) (int, error) {
-	n := len(p)
-	wc.Total += uint64(n)
-	var per float64 = float64(wc.Total) / float64(wc.Size)
-	var i int = int(per * 100)
-	fmt.Printf("\r%s%d%% %s %s  ", util.Bar(i, 25), i, util.ByteFormat(wc.Total), wc.Part)
-	return n, nil
+func (pr *PutprogressReporter) Read(p []byte) (int, error) {
+	return pr.R.Read(p)
+	// n, err := pr.R.Read(p)
+	// pr.Total += uint64(n)
+	// var i int = int(float64(pr.Total) / float64(pr.Size) * 100)
+	// duration := time.Since(pr.StartTime).Seconds()
+	// speed := float64(pr.Total) / 1024 / duration
+	// leftTime := float64(pr.Size)/1024/speed - duration
+	// fmt.Printf("\r%s%d%% %s %.2fKB/s %.1f %.1f  ", util.Bar(i, 25), i, util.ByteFormat(pr.Total), speed, duration, leftTime)
+	// return n, err
 }
 
 func Download(url string, saveas string, size uint64, hash string) {
@@ -100,8 +104,7 @@ func Download(url string, saveas string, size uint64, hash string) {
 	if err != nil {
 		panic(err)
 	}
-	counter := &WriteCounter{}
-	counter.Size = size
+	counter := &WriteCounter{Size: size, StartTime: start}
 	src := io.TeeReader(res.Body, counter)
 	count, err := io.Copy(f, src)
 	if err != nil {
@@ -119,11 +122,11 @@ func Download(url string, saveas string, size uint64, hash string) {
 
 func WgetDownload(url string, saveas string, size uint64, hash string) {
 	thread, thunk := getThreadThunk()
-	start := fastload.GetContinue(saveas)
+	start, _ := fastload.GetContinue(saveas)
 	end := size
 	fmt.Printf("下载中...线程%d,分块大小%dKB\n", thread, thunk/1024)
 	startTime := time.Now()
-	if start >= size {
+	if start >= size && size > 0 {
 		fmt.Println("\n已下载完毕,校验MD5中...")
 		util.PrintMd5(saveas)
 		os.Exit(0)
@@ -157,7 +160,7 @@ func PlayStream(url string, saveas string, size uint64, hash string, stdout bool
 	if startContinue > 1 {
 		start = startContinue
 	} else {
-		start = fastload.GetContinue(saveas)
+		start, _ = fastload.GetContinue(saveas)
 	}
 	if !stdout {
 		fmt.Printf("下载中...线程%d,分块大小%dKB\n", thread, thunk/1024)

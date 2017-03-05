@@ -110,7 +110,7 @@ type TaskDetail struct {
 	Task_name     string
 	Od_type       string
 	File_list     []TaskDetailFile
-	Rresult       int
+	Result        int
 }
 
 type TaskDetailList struct {
@@ -191,23 +191,33 @@ func Wget(filePath string, dist string, size uint64, hash string) {
 }
 
 func WgetUrl(url string, dist string) {
-	size := fastload.GetUrlInfo(url)
-	if size > 1 {
+	size, _ := fastload.GetUrlInfo(url)
+	if size > 0 {
 		fmt.Println(dist + " " + util.ByteFormat(size))
 		var hash string = ""
 		netlayer.WgetDownload(url, dist, size, hash)
 	} else {
-		fmt.Println("远程文件大小未知")
+		fmt.Println(dist + " 远程文件大小未知")
+		var hash string = ""
+		netlayer.WgetDownload(url, dist, size, hash)
 	}
 }
 
 func PlayUrl(url string, dist string, stdout bool) {
-	size := fastload.GetUrlInfo(url)
-	if size > 1 {
-		fmt.Println(dist + " " + util.ByteFormat(size))
-		var hash string = ""
-		netlayer.PlayStream(url, dist, size, hash, stdout)
+	size, _ := fastload.GetUrlInfo(url)
+	var hash string = ""
+	var msg string = ""
+	if size > 0 {
+		msg = dist + " " + util.ByteFormat(size)
+	} else {
+		msg = dist + " 远程文件大小未知"
 	}
+	if stdout {
+		os.Stderr.Write([]byte(msg))
+	} else {
+		fmt.Println(msg)
+	}
+	netlayer.PlayStream(url, dist, size, hash, stdout)
 }
 
 func GetPlayStream(filePath string, dist string, size uint64, hash string, stdout bool) {
@@ -269,31 +279,21 @@ func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
 func PutFile(filePath string, savePath string, fileSize uint64, ondup string) {
 	startTime := time.Now()
 	url := fmt.Sprintf("https://c.pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s&ondup=%s", "upload", config.Cfg.Token, savePath, ondup)
-	bodyBuf := &bytes.Buffer{}
-	bodyWriter := multipart.NewWriter(bodyBuf)
-	//关键的一步操作
-	fileWriter, err := bodyWriter.CreateFormFile("file", filePath)
-	if err != nil {
-		fmt.Println("error writing to buffer")
-		panic(err)
-	}
-	//打开文件句柄操作
+	// url = "http://127.0.0.1:8099/index.php"
 	file, err := os.Open(filePath)
 	if err != nil {
-		fmt.Println("error opening file")
 		panic(err)
 	}
-	//iocopy
-	counter := &netlayer.PutWriteCounter{}
-	counter.Size = fileSize
-	reader := io.TeeReader(file, fileWriter)
-	_, err = io.Copy(counter, reader)
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+	part, err := bodyWriter.CreateFormFile("file", file.Name())
 	if err != nil {
 		panic(err)
 	}
-	contentType := bodyWriter.FormDataContentType()
+	io.Copy(part, file)
 	bodyWriter.Close()
-	str := netlayer.Post(url, contentType, bodyBuf)
+	str := netlayer.Post(url, bodyWriter.FormDataContentType(), bodyBuf)
+	os.Stderr.Write(str)
 	info := &UpFileInfo{}
 	err = json.Unmarshal(str, &info)
 	if err != nil {
@@ -488,27 +488,31 @@ func GetTaskInfo(ids string) {
 	} else {
 		b := bytes.Buffer{}
 		for id, item := range info.Task_info {
-			create_time, _ := strconv.Atoi(item.Create_time)
-			start_time, _ := strconv.Atoi(item.Start_time)
-			finish_time, _ := strconv.Atoi(item.Finish_time)
-			file_size, _ := strconv.Atoi(item.File_size)
-			finished_size, _ := strconv.Atoi(item.Finished_size)
-			b.WriteString(fmt.Sprintf("任务ID:%s\n", id))
-			b.WriteString(fmt.Sprintf("任务名称:%s\n任务状态:%s\n", item.Task_name, showTaskStatus(item.Status)))
-			b.WriteString(fmt.Sprintf("创建时间:%s\n", util.DateS(int64(create_time))))
-			b.WriteString(fmt.Sprintf("开始下载时间:%s\n", util.DateS(int64(start_time))))
-			if file_size > 0 { //已探测出文件大小
-				b.WriteString(fmt.Sprintf("大小:%s\n", util.ByteFormat(uint64(file_size))))
-				if finish_time > start_time { //已下载完毕
-					b.WriteString(fmt.Sprintf("任务完成时间:%s 耗时:%d秒 速度:%dKB/s \n", util.DateS(int64(finish_time)), finish_time-start_time, file_size/1024/(finish_time-start_time)))
-				} else if finish_time == start_time {
-					b.WriteString(fmt.Sprintf("任务完成时间:%s 云端已秒杀 \n", util.DateS(int64(finish_time))))
-				} else {
-					b.WriteString(fmt.Sprintf("已下载:%s 进度:%.1f%% 速度:%dKB/s\n", util.ByteFormat(uint64(finished_size)), float32(finished_size)/float32(file_size)*100, finished_size/1024/(int(timestamp)-start_time)))
+			if item.Result == 0 {
+				create_time, _ := strconv.Atoi(item.Create_time)
+				start_time, _ := strconv.Atoi(item.Start_time)
+				finish_time, _ := strconv.Atoi(item.Finish_time)
+				file_size, _ := strconv.Atoi(item.File_size)
+				finished_size, _ := strconv.Atoi(item.Finished_size)
+				b.WriteString(fmt.Sprintf("\n任务ID:%s\n", id))
+				b.WriteString(fmt.Sprintf("任务名称:%s\n任务状态:%s\n", item.Task_name, showTaskStatus(item.Status)))
+				b.WriteString(fmt.Sprintf("创建时间:%s\n", util.DateS(int64(create_time))))
+				b.WriteString(fmt.Sprintf("开始下载时间:%s\n", util.DateS(int64(start_time))))
+				if file_size > 0 { //已探测出文件大小
+					b.WriteString(fmt.Sprintf("大小:%s\n", util.ByteFormat(uint64(file_size))))
+					if finish_time > start_time { //已下载完毕
+						b.WriteString(fmt.Sprintf("任务完成时间:%s 耗时:%d秒 速度:%dKB/s \n", util.DateS(int64(finish_time)), finish_time-start_time, file_size/1024/(finish_time-start_time)))
+					} else if finish_time == start_time {
+						b.WriteString(fmt.Sprintf("任务完成时间:%s 云端已秒杀 \n", util.DateS(int64(finish_time))))
+					} else {
+						b.WriteString(fmt.Sprintf("已下载:%s 进度:%.1f%% 速度:%dKB/s\n", util.ByteFormat(uint64(finished_size)), float32(finished_size)/float32(file_size)*100, finished_size/1024/(int(timestamp)-start_time)))
+					}
 				}
+				b.WriteString(fmt.Sprintf("原地址:%s\n", item.Source_url))
+				b.WriteString(fmt.Sprintf("存储至:%s\n", item.Save_path))
+			} else {
+				b.WriteString(fmt.Sprintf("\n任务%s不存在\n", id))
 			}
-			b.WriteString(fmt.Sprintf("原地址:%s\n", item.Source_url))
-			b.WriteString(fmt.Sprintf("存储至:%s\n", item.Save_path))
 		}
 		fmt.Print(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + "  ➜  任务详情: \n")
 		fmt.Println(b.String())

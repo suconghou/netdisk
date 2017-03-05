@@ -63,4 +63,6 @@ send to stdout for gzip or xz decode play `disk play test.mp4.gz --stdout | gzip
 https://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id=fNThTaiSso4OtkgTsbtiFpyt&redirect_uri=oob&scope=netdisk
 ```
 
+http://pan.plyz.net/Man.aspx
+
 

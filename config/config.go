@@ -10,7 +10,7 @@ import (
 
 var ConfigPath string = "/etc/disk.json"
 
-var Version string = "0.1.3"
+var Version string = "0.1.4"
 
 type Config struct {
 	Token string
@@ -58,8 +58,17 @@ func (cfg *Config) setToken(token string) {
 	cfg.Token = token
 }
 
+func (cfg *Config) setApp(app string) {
+	cfg.Root = "/apps/" + app
+}
+
 func ConfigSet(value string) {
 	Cfg.setToken(value)
+	SaveConfig()
+}
+
+func ConfigSetApp(value string) {
+	Cfg.setApp(value)
 	SaveConfig()
 }
 
@@ -68,8 +77,7 @@ func ConfigGet() {
 }
 
 func ConfigList() {
-	fmt.Println("Root:" + Cfg.Root)
-	fmt.Println("Path:" + Cfg.Path)
+	fmt.Println(fmt.Sprintf("Root:%s\nPath:%s\nToken:%s", Cfg.Root, Cfg.Path, Cfg.Token))
 }
 
 func SaveConfig() {

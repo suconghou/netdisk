@@ -213,8 +213,10 @@ func Config() {
 		config.ConfigGet()
 	} else if len(os.Args) == 4 && os.Args[2] == "set" {
 		config.ConfigSet(os.Args[3])
+	} else if len(os.Args) == 4 && os.Args[2] == "setapp" {
+		config.ConfigSetApp(os.Args[3])
 	} else {
-		fmt.Println("Usage:disk config list/get/set")
+		fmt.Println("Usage:disk config list/get/set/setapp")
 	}
 }
 
