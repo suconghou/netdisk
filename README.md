@@ -48,6 +48,8 @@ disk mkdir dirname
 
 disk config set "token"
 
+disk config setapp "app"
+
 disk config get
 
 disk config list

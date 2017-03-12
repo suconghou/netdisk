@@ -120,8 +120,8 @@ func Download(url string, saveas string, size uint64, hash string) {
 	util.PrintMd5(saveas)
 }
 
-func WgetDownload(url string, saveas string, size uint64, hash string) {
-	thread, thunk := getThreadThunk()
+func WgetDownload(url string, saveas string, size uint64, hash string, rangeAble bool) {
+	thread, thunk := getThreadThunk(rangeAble)
 	start, _ := fastload.GetContinue(saveas)
 	end := size
 	fmt.Printf("下载中...线程%d,分块大小%dKB\n", thread, thunk/1024)
@@ -139,8 +139,8 @@ func WgetDownload(url string, saveas string, size uint64, hash string) {
 	util.PrintMd5(saveas)
 }
 
-func PlayStream(url string, saveas string, size uint64, hash string, stdout bool) {
-	thread, thunk := getThreadThunk()
+func PlayStream(url string, saveas string, size uint64, hash string, stdout bool, rangeAble bool) {
+	thread, thunk := getThreadThunk(rangeAble)
 	var startContinue uint64 = 0
 	if len(os.Args) >= 4 {
 		var fl string
@@ -242,7 +242,7 @@ func getRange(str string, start uint64, end uint64) (bool, uint64, uint64) {
 
 }
 
-func getThreadThunk() (uint8, uint32) {
+func getThreadThunk(rangeAble bool) (uint8, uint32) {
 	var thread uint8 = 8
 	var thunk uint32 = 524288 * 4
 	if util.HasFlag("--fast") {
@@ -254,6 +254,9 @@ func getThreadThunk() (uint8, uint32) {
 		thunk = thunk / 8
 	} else if util.HasFlag("--fat") {
 		thunk = thunk * 4
+	}
+	if !rangeAble {
+		thread = 1
 	}
 	return thread, thunk
 }

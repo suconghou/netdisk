@@ -187,24 +187,32 @@ func Get(filePath string, dist string, size uint64, hash string) {
 
 func Wget(filePath string, dist string, size uint64, hash string) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "download", config.Cfg.Token, filePath)
-	netlayer.WgetDownload(url, dist, size, hash)
+	netlayer.WgetDownload(url, dist, size, hash, true)
 }
 
 func WgetUrl(url string, dist string) {
-	size, _ := fastload.GetUrlInfo(url)
+	size, rangeAble, err := fastload.GetUrlInfo(url)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	if size > 0 {
 		fmt.Println(dist + " " + util.ByteFormat(size))
 		var hash string = ""
-		netlayer.WgetDownload(url, dist, size, hash)
+		netlayer.WgetDownload(url, dist, size, hash, rangeAble)
 	} else {
 		fmt.Println(dist + " 远程文件大小未知")
 		var hash string = ""
-		netlayer.WgetDownload(url, dist, size, hash)
+		netlayer.WgetDownload(url, dist, size, hash, rangeAble)
 	}
 }
 
 func PlayUrl(url string, dist string, stdout bool) {
-	size, _ := fastload.GetUrlInfo(url)
+	size, rangeAble, err := fastload.GetUrlInfo(url)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	var hash string = ""
 	var msg string = ""
 	if size > 0 {
@@ -217,12 +225,12 @@ func PlayUrl(url string, dist string, stdout bool) {
 	} else {
 		fmt.Println(msg)
 	}
-	netlayer.PlayStream(url, dist, size, hash, stdout)
+	netlayer.PlayStream(url, dist, size, hash, stdout, rangeAble)
 }
 
 func GetPlayStream(filePath string, dist string, size uint64, hash string, stdout bool) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "download", config.Cfg.Token, filePath)
-	netlayer.PlayStream(url, dist, size, hash, stdout)
+	netlayer.PlayStream(url, dist, size, hash, stdout, true)
 }
 
 func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
