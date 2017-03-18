@@ -191,6 +191,7 @@ func Wget(filePath string, dist string, size uint64, hash string) {
 }
 
 func WgetUrl(url string, dist string) {
+	netlayer.ParseCookieUaRefer()
 	size, rangeAble, err := fastload.GetUrlInfo(url)
 	if err != nil {
 		fmt.Println(err)
@@ -208,6 +209,7 @@ func WgetUrl(url string, dist string) {
 }
 
 func PlayUrl(url string, dist string, stdout bool) {
+	netlayer.ParseCookieUaRefer()
 	size, rangeAble, err := fastload.GetUrlInfo(url)
 	if err != nil {
 		fmt.Println(err)

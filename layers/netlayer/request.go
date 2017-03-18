@@ -260,3 +260,17 @@ func getThreadThunk(rangeAble bool) (uint8, uint32) {
 	}
 	return thread, thunk
 }
+
+func ParseCookieUaRefer() {
+	var headers = map[string]string{}
+	if value, err := util.GetParam("--cookie"); err == nil {
+		headers["Cookie"] = value
+	}
+	if value, err := util.GetParam("--ua"); err == nil {
+		headers["User-Agent"] = value
+	}
+	if value, err := util.GetParam("--refer"); err == nil {
+		headers["Referer"] = value
+	}
+	fastload.SetHeader(headers)
+}

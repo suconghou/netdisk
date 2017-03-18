@@ -148,3 +148,17 @@ func HasFlag(flag string) bool {
 	}
 	return false
 }
+
+func GetParam(key string) (string, error) {
+	var catched bool = false
+	for _, item := range os.Args {
+		if catched {
+			return item, nil
+		} else {
+			if item == key {
+				catched = true
+			}
+		}
+	}
+	return "", fmt.Errorf("%s value not found", key)
+}
