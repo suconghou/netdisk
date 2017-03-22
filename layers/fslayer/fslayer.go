@@ -22,6 +22,14 @@ type PcsRequest struct {
 	Error_code int32
 }
 
+type EmptyPcsRequest struct {
+	Request_id uint64
+	Extra      struct {
+		List    []string
+		SuccNum int
+	}
+}
+
 type PcsRequestError struct {
 	Request_id uint64
 	Error_code int
@@ -427,12 +435,13 @@ func SearchFile(fileName string) {
 func Empty() {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&type=%s", "delete", config.Cfg.Token, "recycle")
 	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
-	info := &PcsRequest{}
+	info := &EmptyPcsRequest{}
 	err := json.Unmarshal(str, &info)
 	if err != nil {
+		os.Stderr.Write(str)
 		panic(err)
 	}
-	fmt.Println(util.BoolString(info.Request_id > 1, "已清空回收站", "未清空回收站"))
+	fmt.Println(util.BoolString(info.Request_id >= 1, "已清空回收站 "+strconv.Itoa(info.Extra.SuccNum)+"个项目被清除", "未清空回收站"))
 }
 
 func GetTaskList() {
@@ -459,6 +468,15 @@ func AddTask(savePath string, sourceUrl string) {
 	url := fmt.Sprintf("https://pan.baidu.com/rest/2.0/services/cloud_dl?method=%s&access_token=%s&save_path=%s/&source_url=%s&app_id=250528", "add_task", config.Cfg.Token, savePath, sourceUrl)
 	str := netlayer.Post(url, "application/x-www-form-urlencoded", nil)
 	info := &AddTaskRet{}
+	infoerr := &PcsRequestError{}
+	if err := json.Unmarshal(str, &infoerr); err == nil {
+		if infoerr.Error_code > 1 {
+			fmt.Println(infoerr.Error_msg)
+			os.Exit(1)
+		}
+	} else {
+		panic(err)
+	}
 	if err := json.Unmarshal(str, &info); err == nil {
 		var taskId string = strconv.FormatUint(info.Task_id, 10)
 		fmt.Println("任务ID:" + taskId)
@@ -477,6 +495,7 @@ func RemoveTask(id string) {
 	info := &PcsRequest{}
 	err := json.Unmarshal(str, &info)
 	if err != nil {
+		os.Stderr.Write(str)
 		panic(err)
 	}
 	if info.Error_msg != "" {

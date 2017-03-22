@@ -12,6 +12,8 @@ var ConfigPath string = "/etc/disk.json"
 
 var Version string = "0.1.4"
 
+var ReleaseUrl = "https://github.com/suconghou/netdisk"
+
 type Config struct {
 	Token string
 	Root  string

@@ -284,7 +284,7 @@ func Serve() {
 
 func Usage() {
 	if len(os.Args) > 1 && os.Args[1] == "-v" {
-		fmt.Println(os.Args[0] + " version: disk/" + config.Version)
+		fmt.Println(os.Args[0] + " version: disk/" + config.Version + "\n" + config.ReleaseUrl)
 	} else {
 		fmt.Println(os.Args[0] + " ls info mv cp get put wget play rm mkdir pwd hash config empty")
 	}
