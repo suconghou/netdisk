@@ -87,7 +87,7 @@ func SaveConfig() {
 	if err != nil {
 		panic(err)
 	} else {
-		err := ioutil.WriteFile(ConfigPath, strJson, 0666)
+		err := ioutil.WriteFile(ConfigPath, strJson, 0777)
 		if err != nil {
 			if os.IsPermission(err) {
 				fmt.Println(err)
