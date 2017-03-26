@@ -15,6 +15,11 @@ import (
 	"time"
 )
 
+func init() {
+	fastload.SetDebug(util.HasFlag("--debug"))
+	fastload.SetOutput(os.Stderr)
+}
+
 func Get(url string) []byte {
 	response, err := http.Get(url)
 	if err != nil {
@@ -245,7 +250,9 @@ func getRange(str string, start uint64, end uint64) (bool, uint64, uint64) {
 func getThreadThunk(rangeAble bool) (uint8, uint32) {
 	var thread uint8 = 8
 	var thunk uint32 = 524288 * 4
-	if util.HasFlag("--fast") {
+	if util.HasFlag("--most") {
+		thread = thread * 4
+	} else if util.HasFlag("--fast") {
 		thread = thread * 2
 	} else if util.HasFlag("--slow") {
 		thread = thread / 2
