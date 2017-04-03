@@ -260,6 +260,7 @@ func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
 		b := bytes.Buffer{}
 		b.WriteString(item.Path)
 		b.WriteString("\n文件大小:" + util.ByteFormat(item.Size))
+		b.WriteString("\n文件字节:" + strconv.FormatInt(int64(item.Size), 10))
 		b.WriteString("\n文件标识:" + strconv.FormatUint(item.Fs_id, 10))
 		b.WriteString("\n创建时间:" + util.DateS(int64(item.Ctime)))
 		b.WriteString("\n修改时间:" + util.DateS(int64(item.Mtime)))

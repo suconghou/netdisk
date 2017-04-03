@@ -69,6 +69,8 @@ fast download and multithreading
 
 send to stdout for gzip or xz decode play `disk play test.mp4.gz --stdout | gzip -d | mpv  -`
 
+
+
 ### speed and thunk control
 
 `--fast/--slow   --fat/--thin` can be used for `disk wget file/url` and `disk play file/url`
@@ -89,6 +91,8 @@ disk wget file/url --thin // set to 256K
 ```
 
 
+
+
 ### request with cookie or refer or ua
 
 `cookie,ua,refer` control can be used for `disk wget url` and `disk play url`
@@ -98,6 +102,23 @@ disk wget file/url --thin // set to 256K
 `--refer "http refer string"`
 
 `--ua "user agent string"`
+
+
+
+### other flag
+
+
+`disk put local_file -f`  fore rewrite remote file if conflicted
+
+`disk info file -i` show file info and download link ,the link can be downloaded in multithread
+
+use `GET` method to detect url `Content-Length` instead of `HEAD` method in case of some server declined
+
+`disk wget http://xxx  --GET`
+
+`disk wget file/url --debug` see debug log information
+
+use  `--range:1230-123456` or `--range:45612-` to force get certain range content, it is supported  both `wget` and `play` action
 
 ```
 https://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id=fNThTaiSso4OtkgTsbtiFpyt&redirect_uri=oob&scope=netdisk

@@ -15,6 +15,9 @@ import (
 	"time"
 )
 
+var userRangeFullFormatReg = regexp.MustCompile(`^--range:(\d+)-(\d+)$`)
+var userRangeHalfFormatReg = regexp.MustCompile(`^--range:(\d+)-$`)
+
 func init() {
 	fastload.SetDebug(util.HasFlag("--debug"))
 	fastload.SetOutput(os.Stderr)
@@ -127,67 +130,68 @@ func Download(url string, saveas string, size uint64, hash string) {
 
 func WgetDownload(url string, saveas string, size uint64, hash string, rangeAble bool) {
 	thread, thunk := getThreadThunk(rangeAble)
-	start, _ := fastload.GetContinue(saveas)
-	end := size
-	fmt.Printf("下载中...线程%d,分块大小%dKB\n", thread, thunk/1024)
+	var taskStart uint64 = 0
+	var taskEnd uint64 = size
+	userRangeStart, userRangeEnd, needChange := tryGetUserRange(taskStart, size, rangeAble)
+	if needChange {
+		taskStart = userRangeStart
+		taskEnd = userRangeEnd
+	} else {
+		taskStart, _ = fastload.GetContinue(saveas)
+	}
+	fmt.Printf("下载中...线程%d,分块大小%dKB,%d-%d/%d\n", thread, thunk/1024, taskStart, taskEnd, size)
 	startTime := time.Now()
-	if start >= size && size > 0 {
+	if taskStart >= size && size > 0 {
 		fmt.Println("\n已下载完毕,校验MD5中...")
 		util.PrintMd5(saveas)
 		os.Exit(0)
 	} else {
-		fastload.Load(url, saveas, start, end, thread, thunk, false, nil)
+		err := fastload.Load(url, saveas, taskStart, taskEnd, thread, thunk, false, nil)
+		if err != nil {
+			util.Halt(fmt.Sprintf("download error:", err))
+		}
 	}
 	endTime := time.Since(startTime)
-	speed := float64((size-start)/1024) / endTime.Seconds()
+	speed := float64((taskEnd-taskStart)/1024) / endTime.Seconds()
 	fmt.Printf("\n下载完毕,耗时%s,%.2fKB/s,校验MD5中...\n", endTime.String(), speed)
 	util.PrintMd5(saveas)
 }
 
 func PlayStream(url string, saveas string, size uint64, hash string, stdout bool, rangeAble bool) {
 	thread, thunk := getThreadThunk(rangeAble)
-	var startContinue uint64 = 0
-	if len(os.Args) >= 4 {
-		var fl string
-		if len(os.Args) > 4 {
-			fl = os.Args[4]
-		} else {
-			fl = os.Args[3]
-		}
-		match, matchStart, matchEnd := getRange(fl, startContinue, size)
-		if match {
-			size = matchEnd
-			startContinue = matchStart
-		}
-	}
-	var start uint64 = 0
-	var end uint64 = size
-	if startContinue > 1 {
-		start = startContinue
+	var taskStart uint64 = 0
+	var taskEnd uint64 = 0
+	userRangeStart, userRangeEnd, needChange := tryGetUserRange(taskStart, size, rangeAble)
+	if needChange {
+		taskStart = userRangeStart
+		taskEnd = userRangeEnd
 	} else {
-		start, _ = fastload.GetContinue(saveas)
+		taskStart, _ = fastload.GetContinue(saveas)
 	}
 	if !stdout {
-		fmt.Printf("下载中...线程%d,分块大小%dKB\n", thread, thunk/1024)
+		fmt.Printf("下载中...线程%d,分块大小%dKB,%d-%d/%d\n", thread, thunk/1024, taskStart, taskEnd, size)
 	}
 	startTime := time.Now()
-	if start >= size {
+	if taskStart >= size && size > 0 {
 		fmt.Printf("\n已下载完毕,校验MD5中...\n")
 		util.PrintMd5(saveas)
 		os.Exit(0)
 	} else {
 		var playerRun bool = false
-		fastload.Load(url, saveas, start, end, thread, thunk, stdout, func(percent int, downloaded uint64) {
+		err := fastload.Load(url, saveas, taskStart, taskEnd, thread, thunk, stdout, func(percent int, downloaded uint64) {
 			if percent > 5 && !playerRun {
 				playerRun = true
 				callPlayer(saveas)
 			}
 		})
+		if err != nil {
+			util.Halt(fmt.Sprintf("download error:", err))
+		}
 	}
 	if !stdout {
 		endTime := time.Since(startTime)
-		speed := float64((size-start)/1024) / endTime.Seconds()
-		fmt.Printf("\n下载完毕,耗时%s,%.2fKB/s %s \n", endTime.String(), speed, util.BoolString(stdout, "", ",校验MD5中..."))
+		speed := float64((taskEnd-taskStart)/1024) / endTime.Seconds()
+		fmt.Printf("\n下载完毕,耗时%s,%.2fKB/s,校验MD5中...\n", endTime.String(), speed)
 		util.PrintMd5(saveas)
 	}
 }
@@ -202,49 +206,45 @@ func callPlayer(file string) {
 	}
 }
 
-func getRange(str string, start uint64, end uint64) (bool, uint64, uint64) {
-	var rangeXp = regexp.MustCompile(`^(\d+)-(\d+)$`)
-	var rangeXpAll = regexp.MustCompile(`^(\d+)-$`)
+func tryGetUserRange(start uint64, end uint64, rangeAble bool) (uint64, uint64, bool) {
+	var userRangeStart uint64
+	var userRangeEnd uint64
 	var matched bool = false
-	var matchStart uint64
-	var matchEnd uint64
-	if rangeXp.MatchString(str) {
-		match := rangeXp.FindStringSubmatch(str)
-		strSt1, _ := strconv.Atoi(match[1])
-		matchStart = uint64(strSt1)
-		strSt2, _ := strconv.Atoi(match[2])
-		matchEnd = uint64(strSt2)
-		if matchStart < 8192 {
-			matchStart = matchStart * 1048576
+	for _, item := range os.Args {
+		if userRangeHalfFormatReg.MatchString(item) {
+			matches := userRangeHalfFormatReg.FindStringSubmatch(item)
+			startInt, _ := strconv.Atoi(matches[1])
+			userRangeStart = uint64(startInt)
+			userRangeEnd = end
+			matched = true
+			break
+		} else if userRangeFullFormatReg.MatchString(item) {
+			matches := userRangeFullFormatReg.FindStringSubmatch(item)
+			startInt, _ := strconv.Atoi(matches[1])
+			endInt, _ := strconv.Atoi(matches[2])
+			userRangeStart = uint64(startInt)
+			userRangeEnd = uint64(endInt)
+			matched = true
+			break
 		}
-		if matchEnd < 8192 {
-			matchEnd = matchEnd * 1048576
-		}
-		if (matchEnd < matchStart) || (matchStart >= end) {
-			os.Stderr.Write([]byte("error range"))
-			os.Exit(1)
-		} else if matchEnd > end {
-			matchEnd = end
-		}
-		matched = true
-
-	} else if rangeXpAll.MatchString(str) {
-		match := rangeXpAll.FindStringSubmatch(str)
-		strSt1, _ := strconv.Atoi(match[1])
-		matchStart = uint64(strSt1)
-		if matchStart < 8192 {
-			matchStart = matchStart * 1048576
-		}
-		if matchStart > end {
-			os.Stderr.Write([]byte("error range"))
-			os.Exit(1)
-		} else {
-			matchEnd = end
-		}
-		matched = true
 	}
-	return matched, matchStart, matchEnd
-
+	if matched {
+		if userRangeStart > userRangeEnd {
+			util.Halt("error range: start no less than end", userRangeStart, userRangeEnd)
+		} else if (userRangeEnd > end) || (userRangeStart > end) {
+			util.Halt("error range: range out of file end")
+		}
+		if rangeAble {
+			return userRangeStart, userRangeEnd, true
+		} else {
+			util.Debug("download is not rangeable , reset to default")
+			return start, end, false
+		}
+	}
+	if start > end {
+		util.Halt("error range: start no less than end", start, end)
+	}
+	return start, end, false
 }
 
 func getThreadThunk(rangeAble bool) (uint8, uint32) {
@@ -263,6 +263,7 @@ func getThreadThunk(rangeAble bool) (uint8, uint32) {
 		thunk = thunk * 4
 	}
 	if !rangeAble {
+		util.Debug("download is not rangeable , using one thread")
 		thread = 1
 	}
 	return thread, thunk

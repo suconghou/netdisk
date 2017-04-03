@@ -6,11 +6,19 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
+	"log"
 	"math"
 	"os"
 	"strings"
 	"time"
 )
+
+var debuglog bool = false
+
+func init() {
+	SetDebug(HasFlag("--debug"))
+	SetOutput(os.Stderr)
+}
 
 func ByteFormat(bytes uint64) string {
 	unit := [...]string{"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"}
@@ -161,4 +169,25 @@ func GetParam(key string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("%s value not found", key)
+}
+
+func Debug(args ...interface{}) {
+	if debuglog {
+		log.Println(args...)
+	}
+}
+
+func Halt(args ...interface{}) {
+	if debuglog {
+		log.Println(args...)
+	}
+	os.Exit(1)
+}
+
+func SetDebug(debug bool) {
+	debuglog = debug
+}
+
+func SetOutput(w io.Writer) {
+	log.SetOutput(w)
 }
