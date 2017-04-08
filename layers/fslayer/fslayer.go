@@ -260,7 +260,7 @@ func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
 		b := bytes.Buffer{}
 		b.WriteString(item.Path)
 		b.WriteString("\n文件大小:" + util.ByteFormat(item.Size))
-		b.WriteString("\n文件字节:" + strconv.FormatInt(int64(item.Size), 10))
+		b.WriteString("\n文件字节:" + strconv.FormatUint(item.Size, 10))
 		b.WriteString("\n文件标识:" + strconv.FormatUint(item.Fs_id, 10))
 		b.WriteString("\n创建时间:" + util.DateS(int64(item.Ctime)))
 		b.WriteString("\n修改时间:" + util.DateS(int64(item.Mtime)))
@@ -456,7 +456,7 @@ func GetTaskList() {
 	} else {
 		b := bytes.Buffer{}
 		for _, item := range info.Task_info {
-			create_time, _ := strconv.Atoi(item.Create_time)
+			create_time, _ := strconv.ParseUint(item.Create_time, 10, 64)
 			b.WriteString(fmt.Sprintf("\n任务ID:%s\n任务名称:%s\n创建时间:%s\n任务状态:%s", item.Task_id, item.Task_name, util.DateS(int64(create_time)), showTaskStatus(item.Status)))
 			b.WriteString(fmt.Sprintf("\n源地址:%s \n存储至:%s\n", item.Source_url, item.Save_path))
 		}
@@ -519,23 +519,25 @@ func GetTaskInfo(ids string) {
 		b := bytes.Buffer{}
 		for id, item := range info.Task_info {
 			if item.Result == 0 {
-				create_time, _ := strconv.Atoi(item.Create_time)
-				start_time, _ := strconv.Atoi(item.Start_time)
-				finish_time, _ := strconv.Atoi(item.Finish_time)
-				file_size, _ := strconv.Atoi(item.File_size)
-				finished_size, _ := strconv.Atoi(item.Finished_size)
+				create_time, _ := strconv.ParseInt(item.Create_time, 10, 64)
+				start_time, _ := strconv.ParseInt(item.Start_time, 10, 64)
+				finish_time, _ := strconv.ParseInt(item.Finish_time, 10, 64)
+				file_size, _ := strconv.ParseUint(item.File_size, 10, 64)
+				finished_size, _ := strconv.ParseUint(item.Finished_size, 10, 64)
 				b.WriteString(fmt.Sprintf("\n任务ID:%s\n", id))
 				b.WriteString(fmt.Sprintf("任务名称:%s\n任务状态:%s\n", item.Task_name, showTaskStatus(item.Status)))
-				b.WriteString(fmt.Sprintf("创建时间:%s\n", util.DateS(int64(create_time))))
-				b.WriteString(fmt.Sprintf("开始下载时间:%s\n", util.DateS(int64(start_time))))
+				b.WriteString(fmt.Sprintf("创建时间:%s\n", util.DateS(create_time)))
+				b.WriteString(fmt.Sprintf("开始下载时间:%s\n", util.DateS(start_time)))
 				if file_size > 0 { //已探测出文件大小
-					b.WriteString(fmt.Sprintf("大小:%s\n", util.ByteFormat(uint64(file_size))))
+					b.WriteString(fmt.Sprintf("大小:%s\n", util.ByteFormat(file_size)))
 					if finish_time > start_time { //已下载完毕
-						b.WriteString(fmt.Sprintf("任务完成时间:%s 耗时:%d秒 速度:%dKB/s \n", util.DateS(int64(finish_time)), finish_time-start_time, file_size/1024/(finish_time-start_time)))
+						var duration int64 = finish_time - start_time
+						b.WriteString(fmt.Sprintf("任务完成时间:%s 耗时:%d秒 速度:%dKB/s \n", util.DateS(finish_time), duration, float64(file_size)/1024/float64(duration)))
 					} else if finish_time == start_time {
-						b.WriteString(fmt.Sprintf("任务完成时间:%s 云端已秒杀 \n", util.DateS(int64(finish_time))))
+						b.WriteString(fmt.Sprintf("任务完成时间:%s 云端已秒杀 \n", util.DateS(finish_time)))
 					} else {
-						b.WriteString(fmt.Sprintf("已下载:%s 进度:%.1f%% 速度:%dKB/s\n", util.ByteFormat(uint64(finished_size)), float32(finished_size)/float32(file_size)*100, finished_size/1024/(int(timestamp)-start_time)))
+						var duration int64 = int64(timestamp) - start_time
+						b.WriteString(fmt.Sprintf("已下载:%s 进度:%.1f%% 速度:%dKB/s\n", util.ByteFormat(finished_size), float64(finished_size)/float64(file_size)*100, float64(finished_size)/1024/float64(duration)))
 					}
 				}
 				b.WriteString(fmt.Sprintf("原地址:%s\n", item.Source_url))

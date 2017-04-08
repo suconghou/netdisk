@@ -213,17 +213,17 @@ func tryGetUserRange(start uint64, end uint64, rangeAble bool) (uint64, uint64, 
 	for _, item := range os.Args {
 		if userRangeHalfFormatReg.MatchString(item) {
 			matches := userRangeHalfFormatReg.FindStringSubmatch(item)
-			startInt, _ := strconv.Atoi(matches[1])
-			userRangeStart = uint64(startInt)
+			startInt, _ := strconv.ParseUint(matches[1], 10, 64)
+			userRangeStart = startInt
 			userRangeEnd = end
 			matched = true
 			break
 		} else if userRangeFullFormatReg.MatchString(item) {
 			matches := userRangeFullFormatReg.FindStringSubmatch(item)
-			startInt, _ := strconv.Atoi(matches[1])
-			endInt, _ := strconv.Atoi(matches[2])
-			userRangeStart = uint64(startInt)
-			userRangeEnd = uint64(endInt)
+			startInt, _ := strconv.ParseUint(matches[1], 10, 64)
+			endInt, _ := strconv.ParseUint(matches[2], 10, 64)
+			userRangeStart = startInt
+			userRangeEnd = endInt
 			matched = true
 			break
 		}
