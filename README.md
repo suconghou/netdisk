@@ -120,6 +120,14 @@ use `GET` method to detect url `Content-Length` instead of `HEAD` method in case
 
 use  `--range:1230-123456` or `--range:45612-` to force get certain range content, it is supported  both `wget` and `play` action
 
+you also can use
+```
+disk wget file --range:0-88000
+disk wget file --range:88000-988000
+disk wget file --range:988000-
+```
+thus will not break your file which just like `disk wget file`
+
 ```
 https://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id=fNThTaiSso4OtkgTsbtiFpyt&redirect_uri=oob&scope=netdisk
 ```

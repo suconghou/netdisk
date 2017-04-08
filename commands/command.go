@@ -263,10 +263,10 @@ func Serve() {
 		os.Exit(1)
 	}
 	var doc string
-	if path.IsAbs(root) {
+	if filepath.IsAbs(root) {
 		doc = root
 	} else {
-		doc = path.Join(pwd, root)
+		doc = filepath.Join(pwd, root)
 	}
 	if _, err := os.Stat(doc); err == nil {
 		fmt.Println("Server listening on port " + strconv.Itoa(port))

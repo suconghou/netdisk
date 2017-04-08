@@ -147,7 +147,7 @@ func GetInfo() {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/quota?method=%s&access_token=%s", "info", config.Cfg.Token)
 	str := netlayer.Get(url)
 	info := &PcsInfo{}
-	err := json.Unmarshal([]byte(str), &info)
+	err := json.Unmarshal(str, &info)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -247,7 +247,7 @@ func GetFileInfo(filePath string, noprint bool) (bool, uint64, string) {
 	url := fmt.Sprintf("https://pcs.baidu.com/rest/2.0/pcs/file?method=%s&access_token=%s&path=%s", "meta", config.Cfg.Token, filePath)
 	str := netlayer.Get(url)
 	info := &PcsFileMetaList{}
-	err := json.Unmarshal([]byte(str), &info)
+	err := json.Unmarshal(str, &info)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
