@@ -160,7 +160,7 @@ func WgetDownload(url string, saveas string, size uint64, hash string, rangeAble
 func PlayStream(url string, saveas string, size uint64, hash string, stdout bool, rangeAble bool) {
 	thread, thunk := getThreadThunk(rangeAble)
 	var taskStart uint64 = 0
-	var taskEnd uint64 = 0
+	var taskEnd uint64 = size
 	userRangeStart, userRangeEnd, needChange := tryGetUserRange(taskStart, size, rangeAble)
 	if needChange {
 		taskStart = userRangeStart
