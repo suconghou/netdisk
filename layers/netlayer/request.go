@@ -2,7 +2,6 @@ package netlayer
 
 import (
 	"fmt"
-	"github.com/suconghou/fastload/fastload"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,8 +18,7 @@ var userRangeFullFormatReg = regexp.MustCompile(`^--range:(\d+)-(\d+)$`)
 var userRangeHalfFormatReg = regexp.MustCompile(`^--range:(\d+)-$`)
 
 func init() {
-	fastload.SetDebug(util.HasFlag("--debug"))
-	fastload.SetOutput(os.Stderr)
+
 }
 
 func Get(url string) []byte {
@@ -128,74 +126,6 @@ func Download(url string, saveas string, size uint64, hash string) {
 	util.PrintMd5(saveas)
 }
 
-func WgetDownload(url string, saveas string, size uint64, hash string, rangeAble bool) {
-	thread, thunk := getThreadThunk(rangeAble)
-	var taskStart uint64 = 0
-	var taskEnd uint64 = size
-	userRangeStart, userRangeEnd, needChange := tryGetUserRange(taskStart, size, rangeAble)
-	if needChange {
-		taskStart = userRangeStart
-		taskEnd = userRangeEnd
-	} else {
-		taskStart, _ = fastload.GetContinue(saveas)
-	}
-	fmt.Printf("下载中...线程%d,分块大小%dKB,%d-%d/%d\n", thread, thunk/1024, taskStart, taskEnd, size)
-	startTime := time.Now()
-	if taskStart >= size && size > 0 {
-		fmt.Println("\n已下载完毕,校验MD5中...")
-		util.PrintMd5(saveas)
-		os.Exit(0)
-	} else {
-		err := fastload.Load(url, saveas, taskStart, taskEnd, thread, thunk, false, nil)
-		if err != nil {
-			util.Halt(fmt.Sprintf("download error:", err))
-		}
-	}
-	endTime := time.Since(startTime)
-	speed := float64((taskEnd-taskStart)/1024) / endTime.Seconds()
-	fmt.Printf("\n下载完毕,耗时%s,%.2fKB/s,校验MD5中...\n", endTime.String(), speed)
-	util.PrintMd5(saveas)
-}
-
-func PlayStream(url string, saveas string, size uint64, hash string, stdout bool, rangeAble bool) {
-	thread, thunk := getThreadThunk(rangeAble)
-	var taskStart uint64 = 0
-	var taskEnd uint64 = size
-	userRangeStart, userRangeEnd, needChange := tryGetUserRange(taskStart, size, rangeAble)
-	if needChange {
-		taskStart = userRangeStart
-		taskEnd = userRangeEnd
-	} else {
-		taskStart, _ = fastload.GetContinue(saveas)
-	}
-	if !stdout {
-		fmt.Printf("下载中...线程%d,分块大小%dKB,%d-%d/%d\n", thread, thunk/1024, taskStart, taskEnd, size)
-	}
-	startTime := time.Now()
-	if taskStart >= size && size > 0 {
-		fmt.Printf("\n已下载完毕,校验MD5中...\n")
-		util.PrintMd5(saveas)
-		os.Exit(0)
-	} else {
-		var playerRun bool = false
-		err := fastload.Load(url, saveas, taskStart, taskEnd, thread, thunk, stdout, func(percent int, downloaded uint64) {
-			if percent > 5 && !playerRun {
-				playerRun = true
-				callPlayer(saveas)
-			}
-		})
-		if err != nil {
-			util.Halt(fmt.Sprintf("download error:", err))
-		}
-	}
-	if !stdout {
-		endTime := time.Since(startTime)
-		speed := float64((taskEnd-taskStart)/1024) / endTime.Seconds()
-		fmt.Printf("\n下载完毕,耗时%s,%.2fKB/s,校验MD5中...\n", endTime.String(), speed)
-		util.PrintMd5(saveas)
-	}
-}
-
 func callPlayer(file string) {
 	if runtime.GOOS == "windows" {
 		cmd := exec.Command("PotPlayerMini.exe", file)
@@ -230,19 +160,19 @@ func tryGetUserRange(start uint64, end uint64, rangeAble bool) (uint64, uint64, 
 	}
 	if matched {
 		if userRangeStart > userRangeEnd {
-			util.Halt("error range: start no less than end", userRangeStart, userRangeEnd)
+			panic("error range: start no less than end")
 		} else if (userRangeEnd > end) || (userRangeStart > end) {
-			util.Halt("error range: range out of file end")
+			panic("error range: range out of file end")
 		}
 		if rangeAble {
 			return userRangeStart, userRangeEnd, true
 		} else {
-			util.Debug("download is not rangeable , reset to default")
+			panic("download is not rangeable , reset to default")
 			return start, end, false
 		}
 	}
 	if start > end {
-		util.Halt("error range: start no less than end", start, end)
+		panic("error range: start no less than end")
 	}
 	return start, end, false
 }
@@ -263,7 +193,7 @@ func getThreadThunk(rangeAble bool) (uint8, uint32) {
 		thunk = thunk * 4
 	}
 	if !rangeAble {
-		util.Debug("download is not rangeable , using one thread")
+		panic("download is not rangeable , using one thread")
 		thread = 1
 	}
 	return thread, thunk
@@ -280,5 +210,4 @@ func ParseCookieUaRefer() {
 	if value, err := util.GetParam("--refer"); err == nil {
 		headers["Referer"] = value
 	}
-	fastload.SetHeader(headers)
 }

@@ -3,6 +3,8 @@ package commands
 import (
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"netdisk/config"
 	"netdisk/layers/fslayer"
@@ -12,11 +14,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/suconghou/utilgo"
+	kcp "github.com/xtaci/kcp-go"
 )
 
 func Use() {
 	fmt.Println("select default remote connect")
-	fmt.Println(config.Cfg)
 }
 
 func Ls() {
@@ -95,22 +99,17 @@ func Rm() {
 	}
 }
 
+// Get do a simple download not for url
 func Get() {
 	if len(os.Args) >= 3 {
 		var filePath = absPath(os.Args[2])
-
-		var dist string = ""
-		if len(os.Args) >= 4 {
-			dist = absLocalPath(os.Args[3])
+		if utilgo.IsURL(filePath) {
+			fslayer.GetUrl(filePath)
 		} else {
-			dist = absLocalPath(path.Base(filePath))
-		}
-		ok, size, hash := fslayer.GetFileInfo(filePath, false)
-		if ok {
-			fslayer.Get(filePath, dist, size, hash)
+			fslayer.Get(filePath)
 		}
 	} else {
-		fmt.Println("Usage:disk get filepath saveas")
+		fmt.Println("Usage:disk get filepath")
 	}
 }
 
@@ -128,29 +127,19 @@ func Put() {
 			fmt.Println(path + "不存在或不可读")
 		}
 	} else {
-		fmt.Println("Usage:disk put filepath saveas")
+		fmt.Println("Usage:disk put filepath")
 	}
 }
 
+// Wget url/file
 func Wget() {
 	if len(os.Args) >= 3 {
-		var filePath = absPath(os.Args[2])
-		var dist string = ""
-		if len(os.Args) >= 4 && (!strings.Contains(os.Args[3], "-")) {
-			dist = absLocalPath(os.Args[3])
+		var filePath = os.Args[2]
+		if utilgo.IsURL(filePath) {
+			fslayer.WgetUrl(filePath)
 		} else {
-			dist = absLocalPath(path.Base(filePath))
+			fslayer.Wget(filePath)
 		}
-		if strings.HasPrefix(os.Args[2], "http://") || strings.HasPrefix(os.Args[2], "https://") {
-			tokens := strings.Split(dist, "?")
-			fslayer.WgetUrl(os.Args[2], tokens[0])
-		} else {
-			ok, size, hash := fslayer.GetFileInfo(filePath, false)
-			if ok {
-				fslayer.Wget(filePath, dist, size, hash)
-			}
-		}
-
 	} else {
 		fmt.Println("Usage:disk wget filepath/url saveas")
 	}
@@ -203,7 +192,7 @@ func Play() {
 }
 
 func Help() {
-	fmt.Println(os.Args[0] + " ls info mv get put wget play rm mkdir pwd hash config search task ")
+	fmt.Println(os.Args[0] + " ls info mv cp get put wget play rm mkdir pwd hash config empty search task ")
 }
 
 func Config() {
@@ -244,7 +233,7 @@ func Empty() {
 	fslayer.Empty()
 }
 
-func Serve() {
+func servePreCheck(callback func(int, string) error) {
 	var (
 		port int
 		root string
@@ -271,27 +260,100 @@ func Serve() {
 	if _, err := os.Stat(doc); err == nil {
 		fmt.Println("Server listening on port " + strconv.Itoa(port))
 		fmt.Println("Document root " + doc)
-		error := http.ListenAndServe(":"+strconv.Itoa(port), http.FileServer(http.Dir(doc)))
-		if error != nil {
-			fmt.Println("Error listening:", error.Error())
+		err = callback(port, doc)
+		if err != nil {
+			fmt.Println("Error listening:", err.Error())
 			os.Exit(1)
 		}
 	} else {
 		fmt.Println(doc + " not exists")
 	}
+}
 
+func Serve() {
+	servePreCheck(func(port int, doc string) error {
+		return http.ListenAndServe(":"+strconv.Itoa(port), http.FileServer(http.Dir(doc)))
+	})
+}
+
+func KcpServe() {
+	if len(os.Args) == 3 {
+		kcpconn, err := kcp.DialWithOptions(os.Args[2], nil, 10, 3)
+		if err != nil {
+			log.Fatal(err)
+		}
+		kcpconn.SetStreamMode(true)
+		kcpconn.SetWriteDelay(true)
+		kcpconn.SetNoDelay(1, 10, 2, 1)
+		kcpconn.SetWindowSize(1024, 1024)
+		kcpconn.SetMtu(1350)
+		kcpconn.SetACKNoDelay(true)
+		if err := kcpconn.SetDSCP(0); err != nil {
+			log.Println("SetDSCP:", err)
+		}
+		if err := kcpconn.SetReadBuffer(4194304); err != nil {
+			log.Println("SetReadBuffer:", err)
+		}
+		if err := kcpconn.SetWriteBuffer(4194304); err != nil {
+			log.Println("SetWriteBuffer:", err)
+		}
+		if _, err := io.Copy(os.Stdout, kcpconn); err != nil {
+			log.Fatal(err)
+		}
+		kcpconn.Close()
+
+	} else {
+		servePreCheck(func(port int, doc string) error {
+			lis, err := kcp.ListenWithOptions("0.0.0.0:"+strconv.Itoa(port), nil, 10, 3)
+			if err != nil {
+				return err
+			}
+			for {
+				if conn, err := lis.AcceptKCP(); err == nil {
+					fmt.Println(conn)
+					conn.SetStreamMode(true)
+					conn.SetWriteDelay(true)
+					conn.SetNoDelay(1, 10, 2, 1)
+					conn.SetMtu(1350)
+					conn.SetWindowSize(1024, 1024)
+					conn.SetACKNoDelay(true)
+					if err := lis.SetDSCP(0); err != nil {
+						log.Println("SetDSCP:", err)
+					}
+					if err := lis.SetReadBuffer(4194304); err != nil {
+						log.Println("SetReadBuffer:", err)
+					}
+					if err := lis.SetWriteBuffer(4194304); err != nil {
+						log.Println("SetWriteBuffer:", err)
+					}
+					go handleClient(conn, doc)
+				} else {
+					log.Printf("Error %+v", err)
+				}
+			}
+
+		})
+	}
+}
+
+func handleClient(conn io.ReadWriteCloser, file string) {
+	f, err := os.OpenFile(file, os.O_RDWR, 0755)
+	fmt.Println(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if _, err := io.Copy(conn, f); err != nil {
+		log.Fatal(err)
+	}
+	conn.Close()
 }
 
 func Usage() {
 	if len(os.Args) > 1 && os.Args[1] == "-v" {
 		fmt.Println(os.Args[0] + " version: disk/" + config.Version + "\n" + config.ReleaseUrl)
 	} else {
-		fmt.Println(os.Args[0] + " ls info mv cp get put wget play rm mkdir pwd hash config empty")
+		Help()
 	}
-}
-
-func Daemon() {
-	fmt.Println("daemon start")
 }
 
 func absPath(filePath string) string {

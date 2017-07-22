@@ -2,102 +2,55 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
 )
 
-var ConfigPath string = "/etc/disk.json"
+var configPath = "/etc/disk.json"
 
-var Version string = "0.1.4"
+const (
+	version    = "0.1.4"
+	releaseURL = "https://github.com/suconghou/netdisk"
+)
 
-var ReleaseUrl = "https://github.com/suconghou/netdisk"
-
-type Config struct {
-	Token string
-	Root  string
-	Path  string
-	Disk  string
+// Appcfg config
+type appcfg struct {
+	Driver string
+	Pcs    struct {
+		Token string
+		Root  string
+		Path  string
+	}
 }
 
-var Cfg Config
+// Cfg config the whole app
+var Cfg appcfg
 
-func LoadConfig() Config {
-
+func init() {
 	if runtime.GOOS == "windows" {
-		ConfigPath = `C:\Users\Default\disk.json`
+		configPath = `C:\Users\Default\disk.json`
 	}
-	strJson, err := ioutil.ReadFile(ConfigPath)
+	loadConfig()
+}
+
+func loadConfig() error {
+	strJSON, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		Cfg.Token = "token"
-		Cfg.Root = "/apps/suconghou"
-		Cfg.Path = ""
-		Cfg.Disk = "pcs"
 		if os.IsNotExist(err) {
-			SaveConfig()
-			return Cfg
-		} else if os.IsPermission(err) {
-			fmt.Println(err)
-			os.Exit(1)
+			Cfg.Pcs.Root = "/apps/suconghou"
+			Cfg.Driver = "pcs"
 		} else {
-			panic(err)
+			return err
 		}
-		return Cfg
-	} else {
-		cfg := &Config{}
-		err = json.Unmarshal([]byte(strJson), &cfg)
-		return *cfg
 	}
-
+	return json.Unmarshal([]byte(strJSON), Cfg)
 }
 
-func (cfg *Config) getToken() string {
-	return cfg.Token
-}
-
-func (cfg *Config) setToken(token string) {
-	cfg.Token = token
-}
-
-func (cfg *Config) setApp(app string) {
-	cfg.Root = "/apps/" + app
-}
-
-func ConfigSet(value string) {
-	Cfg.setToken(value)
-	SaveConfig()
-}
-
-func ConfigSetApp(value string) {
-	Cfg.setApp(value)
-	SaveConfig()
-}
-
-func ConfigGet() {
-	fmt.Println("Token:" + Cfg.getToken())
-}
-
-func ConfigList() {
-	fmt.Println(fmt.Sprintf("Root:%s\nPath:%s\nToken:%s", Cfg.Root, Cfg.Path, Cfg.Token))
-}
-
-func SaveConfig() {
-	strJson, err := json.Marshal(Cfg)
+func (Cfg *appcfg) Save() error {
+	strJSON, err := json.Marshal(Cfg)
 	if err != nil {
-		panic(err)
-	} else {
-		err := ioutil.WriteFile(ConfigPath, strJson, 0777)
-		if err != nil {
-			if os.IsPermission(err) {
-				fmt.Println(err)
-				os.Exit(1)
-			} else if os.IsExist(err) {
-				fmt.Println(err)
-				os.Exit(2)
-			} else {
-				panic(err)
-			}
-		}
+		return err
 	}
+	return ioutil.WriteFile(configPath, strJSON, 0777)
 }

@@ -6,19 +6,12 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
-	"log"
 	"math"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 )
-
-var debuglog bool = false
-
-func init() {
-	SetDebug(HasFlag("--debug"))
-	SetOutput(os.Stderr)
-}
 
 func ByteFormat(bytes uint64) string {
 	unit := [...]string{"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"}
@@ -171,23 +164,23 @@ func GetParam(key string) (string, error) {
 	return "", fmt.Errorf("%s value not found", key)
 }
 
-func Debug(args ...interface{}) {
-	if debuglog {
-		log.Println(args...)
+func JSONPut(w http.ResponseWriter, bs []byte, httpCache bool, cacheTime uint32) {
+	CrossShare(w)
+	w.Header().Set("Content-Type", "text/json; charset=utf-8")
+	if httpCache {
+		UseHTTPCache(w, cacheTime)
 	}
+	w.Write(bs)
 }
 
-func Halt(args ...interface{}) {
-	if debuglog {
-		log.Println(args...)
-	}
-	os.Exit(1)
+func UseHTTPCache(w http.ResponseWriter, cacheTime uint32) {
+	w.Header().Set("Expires", time.Now().Add(time.Second*time.Duration(cacheTime)).Format(http.TimeFormat))
+	w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", cacheTime))
 }
 
-func SetDebug(debug bool) {
-	debuglog = debug
-}
-
-func SetOutput(w io.Writer) {
-	log.SetOutput(w)
+func CrossShare(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Max-Age", "3600")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, HEAD, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Content-Length, Accept, Accept-Encoding")
 }
