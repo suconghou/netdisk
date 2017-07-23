@@ -7,7 +7,6 @@ import (
 	"hash/crc32"
 	"io"
 	"log"
-	"math"
 	"net/http"
 	"os"
 	"time"
@@ -18,15 +17,6 @@ var Log = log.New(os.Stdout, "", 0)
 
 // Debug log to stderr
 var Debug = log.New(os.Stderr, "", log.Lshortfile|log.LstdFlags)
-
-func ByteFormat(bytes uint64) string {
-	unit := [...]string{"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"}
-	if bytes >= 1024 {
-		e := math.Floor(math.Log(float64(bytes)) / math.Log(float64(1024)))
-		return fmt.Sprintf("%.2f%s", float64(bytes)/math.Pow(1024, math.Floor(e)), unit[int(e)])
-	}
-	return fmt.Sprintf("%d%s", bytes, unit[0])
-}
 
 func DiskName(code string) string {
 
@@ -40,27 +30,6 @@ func DiskName(code string) string {
 		return "Unknow"
 	}
 
-}
-
-func StringPad(str string, le int) string {
-	l := le - len(str)
-	if l > 0 {
-		for i := 0; i < l; i++ {
-			str = str + " "
-		}
-	}
-	return str
-}
-
-func DateFormat(times uint64) string {
-	t := int64(times)
-	var str string
-	if time.Unix(t, 0).Format("06/01/02") == time.Now().Format("06/01/02") {
-		str = time.Unix(t, 0).Format("15:04:05")
-	} else {
-		str = time.Unix(t, 0).Format("06/01/02")
-	}
-	return str
 }
 
 func DateS(times int64) string {
@@ -101,7 +70,7 @@ func FileOk(filePath string) (uint64, string) {
 			md5h := md5.New()
 			io.Copy(md5h, file)
 			md5Str := hex.EncodeToString(md5h.Sum([]byte("")))
-			fmt.Printf("%s  %s  %s \n", filePath, md5Str, ByteFormat(fileSize)) //md5
+			// fmt.Printf("%s  %s  %s \n", filePath, md5Str, ByteFormat(fileSize)) //md5
 			return fileSize, md5Str
 		}
 	}

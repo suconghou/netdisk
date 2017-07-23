@@ -45,7 +45,7 @@ func loadConfig() error {
 			return err
 		}
 	}
-	return json.Unmarshal([]byte(strJSON), Cfg)
+	return json.Unmarshal([]byte(strJSON), &Cfg)
 }
 
 func (Cfg *appcfg) Save() error {
@@ -65,6 +65,7 @@ func IsPcs() bool {
 }
 
 func Use(driver string) error {
+	Cfg.Save()
 	return nil
 }
 

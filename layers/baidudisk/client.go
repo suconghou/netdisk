@@ -1,12 +1,16 @@
 package baidudisk
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"path"
 
 	"github.com/bitly/go-simplejson"
+	"github.com/suconghou/utilgo"
 )
+
+const name = "百度网盘"
 
 // Bclient is a baidudisk client
 type Bclient struct {
@@ -42,11 +46,31 @@ func NewClient(token string, root string) *Bclient {
 	}
 }
 
-func (bc *Bclient) Ls(p string) {
-
+// Ls print dir content in cli
+func (bc *Bclient) Ls(p string) error {
+	js, err := bc.APILs(p)
+	if err != nil {
+		return err
+	}
+	b := bytes.Buffer{}
+	var total uint64
+	for i := range js.Get("list").MustArray() {
+		item := js.Get("list").GetIndex(i)
+		size := item.Get("size").MustUint64()
+		total = total + size
+		b.WriteString("\n")
+		b.WriteString(utilgo.StringPadding(utilgo.DateFormat(item.Get("ctime").MustInt64()), 22))
+		b.WriteString(utilgo.StringPadding(utilgo.DateFormat(item.Get("mtime").MustInt64()), 22))
+		b.WriteString(utilgo.StringPadding(utilgo.ByteFormat(size), 10))
+		b.WriteString(utilgo.StringPadding(item.Get("path").MustString(), 20))
+	}
+	fmt.Print(name + bc.root + "  ➜  " + p + " " + utilgo.ByteFormat(total))
+	fmt.Println(b.String())
+	return nil
 }
 
-func (bc *Bclient) ApiLs(p string) (*simplejson.Json, error) {
+// APILs response ls
+func (bc *Bclient) APILs(p string) (*simplejson.Json, error) {
 	body, err := httpGet(fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "list", bc.token, path.Join(bc.root, p)))
 	if err != nil {
 		return nil, err
@@ -58,9 +82,9 @@ func (bc *Bclient) Cd() {
 
 }
 
-func (bc *Bclient) ApiCd(p string) (*simplejson.Json, error) {
+func (bc *Bclient) APICd(p string) (*simplejson.Json, error) {
 	bc.path = p
-	return bc.ApiLs(p)
+	return bc.APILs(p)
 }
 
 func (bc *Bclient) Mkdir(p string) {
@@ -79,7 +103,7 @@ func (bc *Bclient) Mv(source string, target string) {
 
 }
 
-func (bc *Bclient) ApiMv(source string, target string) (*simplejson.Json, error) {
+func (bc *Bclient) APIMv(source string, target string) (*simplejson.Json, error) {
 	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&from=%s&to=%s", bc.apiURL, "move", bc.token, path.Join(bc.root, source), path.Join(bc.root, target)), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
@@ -91,7 +115,7 @@ func (bc *Bclient) Cp() {
 
 }
 
-func (bc *Bclient) ApiCp(source string, target string) (*simplejson.Json, error) {
+func (bc *Bclient) APICp(source string, target string) (*simplejson.Json, error) {
 	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&from=%s&to=%s", bc.apiURL, "copy", bc.token, path.Join(bc.root, source), path.Join(bc.root, target)), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
@@ -103,7 +127,7 @@ func (bc *Bclient) Rm(file string) {
 
 }
 
-func (bc *Bclient) ApiRm(file string) (*simplejson.Json, error) {
+func (bc *Bclient) APIRm(file string) (*simplejson.Json, error) {
 	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "delete", bc.token, path.Join(bc.root, file)), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
@@ -112,10 +136,10 @@ func (bc *Bclient) ApiRm(file string) (*simplejson.Json, error) {
 }
 
 func (bc *Bclient) Get(file string) (io.ReadCloser, error) {
-	return bc.ApiGet(file)
+	return bc.APIGet(file)
 }
 
-func (bc *Bclient) ApiGet(file string) (io.ReadCloser, error) {
+func (bc *Bclient) APIGet(file string) (io.ReadCloser, error) {
 	resp, err := httpGetResp(bc.GetDownloadURL(file))
 	if err != nil {
 		return nil, err
@@ -131,7 +155,7 @@ func (bc *Bclient) Put() {
 
 }
 
-func (bc *Bclient) ApiPut(savePath string, overwrite bool) (*simplejson.Json, error) {
+func (bc *Bclient) APIPut(savePath string, overwrite bool) (*simplejson.Json, error) {
 	var ondup = "newcopy"
 	if overwrite {
 		ondup = "overwrite"
@@ -147,7 +171,7 @@ func (bc *Bclient) RapidPut() {
 
 }
 
-func (bc *Bclient) ApiRapidPut(savePath string, fileSize uint64, md5Str string, sliceMd5 string, contentCrc32 string, overwrite bool) (*simplejson.Json, error) {
+func (bc *Bclient) APIRapidPut(savePath string, fileSize uint64, md5Str string, sliceMd5 string, contentCrc32 string, overwrite bool) (*simplejson.Json, error) {
 	var ondup = "newcopy"
 	if overwrite {
 		ondup = "overwrite"
@@ -159,11 +183,24 @@ func (bc *Bclient) ApiRapidPut(savePath string, fileSize uint64, md5Str string, 
 	return simplejson.NewJson(body)
 }
 
-func (bc *Bclient) Info() {
-
+// Info print the disk usage
+func (bc *Bclient) Info() error {
+	js, err := bc.APIInfo()
+	if err != nil {
+		return err
+	}
+	b := bytes.Buffer{}
+	quota := js.Get("quota").MustUint64()
+	used := js.Get("used").MustUint64()
+	b.WriteString(name + "\n总大小:" + utilgo.ByteFormat(quota))
+	b.WriteString("\n已使用:" + utilgo.ByteFormat(used))
+	b.WriteString(fmt.Sprintf("\n利用率:%.1f%%", float32(used)/float32(quota)*100))
+	fmt.Println(b.String())
+	return nil
 }
 
-func (bc *Bclient) ApiInfo() (*simplejson.Json, error) {
+// APIInfo response usage info
+func (bc *Bclient) APIInfo() (*simplejson.Json, error) {
 	body, err := httpGet(fmt.Sprintf("%s?method=%s&access_token=%s", bc.infoURL, "info", bc.token))
 	if err != nil {
 		return nil, err
@@ -171,11 +208,42 @@ func (bc *Bclient) ApiInfo() (*simplejson.Json, error) {
 	return simplejson.NewJson(body)
 }
 
-func (bc *Bclient) Fileinfo() {
-
+// Fileinfo print the file/dir info
+func (bc *Bclient) Fileinfo(p string) error {
+	js, err := bc.APIFileinfo(p)
+	if err != nil {
+		return err
+	}
+	errMsg := js.Get("error_msg").MustString()
+	if errMsg != "" {
+		return fmt.Errorf(errMsg)
+	}
+	b := bytes.Buffer{}
+	item := js.Get("list").GetIndex(0)
+	b.WriteString(name + item.Get("path").MustString())
+	b.WriteString("\n文件类型:" + utilgo.BoolString(item.Get("isdir").MustInt() == 0, "文件", "文件夹"))
+	b.WriteString("\n文件大小:" + utilgo.ByteFormat(item.Get("size").MustUint64()))
+	b.WriteString(fmt.Sprintf("\n文件字节:%d\n文件标识:%d", item.Get("size").MustInt64(), item.Get("fs_id").MustInt64()))
+	b.WriteString("\n创建时间:" + utilgo.DateFormat(item.Get("ctime").MustInt64()))
+	b.WriteString("\n修改时间:" + utilgo.DateFormat(item.Get("mtime").MustInt64()))
+	blocks, err := simplejson.NewJson([]byte(item.Get("block_list").MustString()))
+	if err != nil {
+		return err
+	}
+	blocksarr := blocks.MustStringArray()
+	if len(blocksarr) == 1 {
+		b.WriteString("\n文件哈希:" + blocksarr[0])
+	} else {
+		for _, v := range blocksarr {
+			b.WriteString("\n哈希块:" + v)
+		}
+	}
+	fmt.Println(b.String())
+	return nil
 }
 
-func (bc *Bclient) ApiFileinfo(file string) (*simplejson.Json, error) {
+// APIFileinfo response info
+func (bc *Bclient) APIFileinfo(file string) (*simplejson.Json, error) {
 	body, err := httpGet(fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "meta", bc.token, path.Join(bc.root, file)))
 	if err != nil {
 		return nil, err
@@ -187,7 +255,7 @@ func (bc *Bclient) Search() {
 
 }
 
-func (bc *Bclient) ApiSearch(name string) (*simplejson.Json, error) {
+func (bc *Bclient) APISearch(name string) (*simplejson.Json, error) {
 	body, err := httpGet(fmt.Sprintf("%s?method=%s&access_token=%s&path=%s&wd=%s&re=%s", bc.apiURL, "search", bc.token, bc.root, name, "1"))
 	if err != nil {
 		return nil, err
@@ -211,7 +279,7 @@ func (bc *Bclient) Tasklist() {
 
 }
 
-func (bc *Bclient) ApiTasklist() (*simplejson.Json, error) {
+func (bc *Bclient) APITasklist() (*simplejson.Json, error) {
 	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&status=255&app_id=250528&need_task_info=1", bc.taskURL, "list_task", bc.token), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
@@ -223,7 +291,7 @@ func (bc *Bclient) Taskinfo() {
 
 }
 
-func (bc *Bclient) ApiTaskinfo(ids string) (*simplejson.Json, error) {
+func (bc *Bclient) APITaskinfo(ids string) (*simplejson.Json, error) {
 	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&task_ids=%s&app_id=250528", bc.taskURL, "query_task", bc.token, ids), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
@@ -235,7 +303,7 @@ func (bc *Bclient) Taskremove() {
 
 }
 
-func (bc *Bclient) ApiTaskremove(id string) (*simplejson.Json, error) {
+func (bc *Bclient) APITaskremove(id string) (*simplejson.Json, error) {
 	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&task_id=%s&app_id=250528", bc.taskURL, "cancel_task", bc.token, id), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
@@ -247,7 +315,7 @@ func (bc *Bclient) Clear() {
 
 }
 
-func (bc *Bclient) ApiClear() (*simplejson.Json, error) {
+func (bc *Bclient) APIClear() (*simplejson.Json, error) {
 	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&type=%s", bc.apiURL, "delete", bc.token, "recycle"), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err

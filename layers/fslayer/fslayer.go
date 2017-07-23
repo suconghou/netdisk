@@ -14,11 +14,20 @@ import (
 	"github.com/suconghou/utilgo"
 )
 
-func GetInfo() {
-
+func GetInfo() error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Info()
+	}
+	return nil
 }
 
 func ListDir(filePath string) error {
+	if config.IsPcs() {
+		if filePath == "" {
+			filePath = config.Cfg.Pcs.Path
+		}
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Ls(filePath)
+	}
 	return nil
 }
 
@@ -109,8 +118,8 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	return nil
 }
 
-func GetFileInfo(filePath string, noprint bool) {
-
+func GetFileInfo(filePath string) error {
+	return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Fileinfo(filePath)
 }
 
 func PutFile(filePath string, savePath string, fileSize uint64, ondup string) {

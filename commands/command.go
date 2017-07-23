@@ -24,7 +24,7 @@ func Use() {
 	if len(os.Args) == 3 {
 		err := config.Use(os.Args[2])
 		if err != nil {
-			panic(err)
+			util.Log.Printf("%v", err)
 		}
 	} else {
 		Pwd()
@@ -34,12 +34,12 @@ func Use() {
 // Ls list files
 func Ls() {
 	var dir string
-	if len(os.Args) == 3 {
+	if len(os.Args) >= 3 {
 		dir = os.Args[2]
 	}
 	err := fslayer.ListDir(dir)
 	if err != nil {
-		panic(err)
+		util.Log.Printf("%v", err)
 	}
 }
 
@@ -200,10 +200,16 @@ func Sync() {
 
 // Info print the backend info or file info
 func Info() {
-	if len(os.Args) == 2 {
-
+	if len(os.Args) == 3 {
+		err := fslayer.GetFileInfo(os.Args[2])
+		if err != nil {
+			util.Log.Printf("%v", err)
+		}
 	} else {
-
+		err := fslayer.GetInfo()
+		if err != nil {
+			util.Log.Printf("%v", err)
+		}
 	}
 }
 
