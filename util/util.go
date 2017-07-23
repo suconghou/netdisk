@@ -6,12 +6,18 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
+	"log"
 	"math"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
+
+// Log is a global logger
+var Log = log.New(os.Stdout, "", 0)
+
+// Debug log to stderr
+var Debug = log.New(os.Stderr, "", log.Lshortfile|log.LstdFlags)
 
 func ByteFormat(bytes uint64) string {
 	unit := [...]string{"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"}
@@ -61,13 +67,6 @@ func DateS(times int64) string {
 	return time.Unix(times, 0).Format("2006/01/02 15:04:05")
 }
 
-func BoolString(b bool, s, s1 string) string {
-	if b {
-		return s
-	}
-	return s1
-}
-
 func PrintMd5(filePath string) {
 	file, err := os.Open(filePath)
 	if err == nil {
@@ -78,13 +77,6 @@ func PrintMd5(filePath string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-}
-
-func Bar(vl int, width int) string {
-	var already int = vl / (100 / width)
-	var remain int = width - already
-	fmt.Println(already, remain)
-	return fmt.Sprintf("%s %s", strings.Repeat("█", 0), strings.Repeat(" ", 25))
 }
 
 func FileOk(filePath string) (uint64, string) {
@@ -139,29 +131,6 @@ func GetCrc32AndMd5(filePath string) (string, string) {
 		return crc32Str, md5Str
 	}
 	return "", ""
-}
-
-func HasFlag(flag string) bool {
-	for _, item := range os.Args {
-		if item == flag {
-			return true
-		}
-	}
-	return false
-}
-
-func GetParam(key string) (string, error) {
-	var catched bool = false
-	for _, item := range os.Args {
-		if catched {
-			return item, nil
-		} else {
-			if item == key {
-				catched = true
-			}
-		}
-	}
-	return "", fmt.Errorf("%s value not found", key)
 }
 
 func JSONPut(w http.ResponseWriter, bs []byte, httpCache bool, cacheTime uint32) {

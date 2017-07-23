@@ -12,13 +12,13 @@ type routeInfo struct {
 	Handler func(http.ResponseWriter, *http.Request, []string)
 }
 
-// 路由添加
+// RoutePath defines all routes
 var RoutePath = []routeInfo{
 	{regexp.MustCompile(`^/files/(.+)$`), files},
 	{regexp.MustCompile(`^/imgs/(.+)$`), imgs},
-	{regexp.MustCompile(`^/api/media/(.+)$`), middleware.MediaStreamApi},
+	{regexp.MustCompile(`^/api/media/(.+)$`), middleware.MediaStreamAPI},
 	{regexp.MustCompile(`^/media/(.+)$`), middleware.MediaStream},
-	{regexp.MustCompile(`^/api/net/(.+)$`), middleware.NetStreamApi},
+	{regexp.MustCompile(`^/api/net/(.+)$`), middleware.NetStreamAPI},
 	{regexp.MustCompile(`^/net/(.+)$`), middleware.NetStream},
 }
 

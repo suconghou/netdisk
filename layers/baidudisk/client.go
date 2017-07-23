@@ -254,3 +254,10 @@ func (bc *Bclient) ApiClear() (*simplejson.Json, error) {
 	}
 	return simplejson.NewJson(body)
 }
+
+func showTaskStatus(status string) string {
+	if v, ok := taskStatusMap[status]; ok {
+		return v
+	}
+	return "未知状态"
+}

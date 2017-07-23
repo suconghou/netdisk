@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"netdisk/commands"
-	"netdisk/config"
 	"netdisk/route"
 	"os"
 	"path/filepath"
@@ -36,7 +35,6 @@ var sysStatus struct {
 }
 
 func main() {
-	config.LoadConfig()
 	if len(os.Args) > 1 {
 		cli()
 	} else {

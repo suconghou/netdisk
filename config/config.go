@@ -9,9 +9,10 @@ import (
 
 var configPath = "/etc/disk.json"
 
+// Version and ReleaseURL
 const (
-	version    = "0.1.4"
-	releaseURL = "https://github.com/suconghou/netdisk"
+	Version    = "0.1.4"
+	ReleaseURL = "https://github.com/suconghou/netdisk"
 )
 
 // Appcfg config
@@ -53,4 +54,20 @@ func (Cfg *appcfg) Save() error {
 		return err
 	}
 	return ioutil.WriteFile(configPath, strJSON, 0777)
+}
+
+// IsPcs return if its driver is pcs
+func IsPcs() bool {
+	if Cfg.Driver == "pcs" {
+		return true
+	}
+	return false
+}
+
+func Use(driver string) error {
+	return nil
+}
+
+func ConfigList() {
+
 }

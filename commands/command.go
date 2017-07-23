@@ -10,210 +10,236 @@ import (
 	"netdisk/layers/fslayer"
 	"netdisk/util"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
-	"strings"
+
+	"netdisk/layers/netlayer"
 
 	"github.com/suconghou/utilgo"
 	kcp "github.com/xtaci/kcp-go"
 )
 
+// Use choose a backend
 func Use() {
-	fmt.Println("select default remote connect")
-}
-
-func Ls() {
-	var path string
 	if len(os.Args) == 3 {
-		path = absNoRoot(os.Args[2])
-	} else {
-		path = config.Cfg.Path
-	}
-	fslayer.ListDir(path)
-}
-
-func Cd() {
-	if len(os.Args) == 3 {
-		config.Cfg.Path = absNoRoot(os.Args[2])
-		ret := fslayer.ListDir(config.Cfg.Path)
-		if ret {
-			config.SaveConfig()
+		err := config.Use(os.Args[2])
+		if err != nil {
+			panic(err)
 		}
 	} else {
-		fmt.Println("Usage:disk cd newpath")
+		Pwd()
 	}
 }
 
-func Pwd() {
-	fmt.Println(util.DiskName(config.Cfg.Disk) + config.Cfg.Root + "  ➜  " + config.Cfg.Path)
+// Ls list files
+func Ls() {
+	var dir string
+	if len(os.Args) == 3 {
+		dir = os.Args[2]
+	}
+	err := fslayer.ListDir(dir)
+	if err != nil {
+		panic(err)
+	}
 }
 
+// Cd enter dir and list files
+func Cd() {
+	var dir string
+	if len(os.Args) == 3 {
+		dir = os.Args[2]
+		err := fslayer.ListDir(dir)
+		if err != nil {
+			util.Log.Printf("%v", err)
+		}
+	} else {
+		util.Log.Print("Usage:disk cd newpath")
+	}
+}
+
+// Pwd print current work dir
+func Pwd() {
+
+}
+
+// Mv move file from the backend
 func Mv() {
 	if len(os.Args) == 4 {
-		var source string = absPath(os.Args[2])
-		var target string = absPath(os.Args[3])
-		ok, _, _ := fslayer.GetFileInfo(source, false)
-		if ok {
-			fslayer.MoveFile(source, target)
+		err := fslayer.MoveFile(os.Args[2], os.Args[3])
+		if err != nil {
+			util.Log.Printf("%v", err)
 		}
 	} else {
-		fmt.Println("Usage:disk mv path newpath")
+		util.Log.Print("Usage:disk mv path newpath")
 	}
 }
 
+// Cp copy file from the backend
 func Cp() {
 	if len(os.Args) == 4 {
-		var source string = absPath(os.Args[2])
-		var target string = absPath(os.Args[3])
-		ok, _, _ := fslayer.GetFileInfo(source, false)
-		if ok {
-			fslayer.CopyFile(source, target)
+		err := fslayer.CopyFile(os.Args[2], os.Args[3])
+		if err != nil {
+			util.Log.Printf("%v", err)
 		}
 	} else {
-		fmt.Println("Usage:disk cp path newpath")
+		util.Log.Print("Usage:disk cp path newpath")
 	}
 }
 
+// Mkdir mkdir to the backend
 func Mkdir() {
-
 	if len(os.Args) == 3 {
-		var path string = absPath(os.Args[2])
-		fslayer.Mkdir(path)
+		err := fslayer.Mkdir(os.Args[2])
+		if err != nil {
+			util.Log.Printf("%v", err)
+		}
 	} else {
-		fmt.Println("Usage:disk mkdir path")
+		util.Log.Print("Usage:disk mkdir path")
 	}
-
 }
 
+// Rm delete file from the backend
 func Rm() {
 	if len(os.Args) == 3 {
-		var path string = absPath(os.Args[2])
-		ok, _, _ := fslayer.GetFileInfo(path, false)
-		if ok {
-			fslayer.DeleteFile(path)
+		err := fslayer.DeleteFile(os.Args[2])
+		if err != nil {
+			util.Log.Printf("%v", err)
 		}
 	} else {
-
-		fmt.Println("Usage:disk rm filepath")
+		util.Log.Print("Usage:disk rm filepath")
 	}
 }
 
-// Get do a simple download not for url
+// Get do a simple download
 func Get() {
-	if len(os.Args) >= 3 {
-		var filePath = absPath(os.Args[2])
-		if utilgo.IsURL(filePath) {
-			fslayer.GetUrl(filePath)
-		} else {
-			fslayer.Get(filePath)
+	if len(os.Args) >= 3 && !utilgo.IsURL(os.Args[2]) {
+		reqHeader := netlayer.ParseCookieUaRefer()
+		thread, thunk, start, end := netlayer.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
+		saveas, err := utilgo.GetStorePath(os.Args[2])
+		if err != nil {
+			util.Log.Printf("%v", err)
+			return
+		}
+		err = fslayer.Get(os.Args[2], saveas, reqHeader, thread, thunk, start, end)
+		if err != nil {
+			util.Log.Printf("%v", err)
 		}
 	} else {
-		fmt.Println("Usage:disk get filepath")
+		util.Log.Print("Usage:disk get filepath")
 	}
 }
 
+// Put upload file to the backend
 func Put() {
 	if len(os.Args) >= 3 {
-		var path string = absLocalPath(os.Args[2])
-		var savePath string = absPath(os.Args[2])
-		fileSize, md5Str := util.FileOk(path)
-		var ondup string = util.BoolString(len(os.Args) >= 4, "overwrite", "newcopy")
-		if fileSize > 262144 {
-			fslayer.PutFileRapid(path, savePath, fileSize, ondup, md5Str)
-		} else if fileSize > 1 {
-			fslayer.PutFile(path, savePath, fileSize, ondup)
-		} else {
-			fmt.Println(path + "不存在或不可读")
-		}
+
 	} else {
-		fmt.Println("Usage:disk put filepath")
+		util.Log.Print("Usage:disk put filepath")
 	}
 }
 
-// Wget url/file
+// Wget url like wget
 func Wget() {
-	if len(os.Args) >= 3 {
-		var filePath = os.Args[2]
-		if utilgo.IsURL(filePath) {
-			fslayer.WgetUrl(filePath)
-		} else {
-			fslayer.Wget(filePath)
+	if len(os.Args) >= 3 && utilgo.IsURL(os.Args[2]) {
+		var (
+			reqHeader                 = netlayer.ParseCookieUaRefer()
+			thread, thunk, start, end = netlayer.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
+			saveas, err               = utilgo.GetStorePath(os.Args[2])
+		)
+		if err != nil {
+			util.Log.Printf("%v", err)
+			return
+		}
+		err = fslayer.WgetURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end)
+		if err != nil {
+			util.Log.Printf("%v", err)
 		}
 	} else {
-		fmt.Println("Usage:disk wget filepath/url saveas")
+		util.Log.Print("Usage:disk wget url")
 	}
 }
 
+// Play play a url or file
+func Play() {
+	if len(os.Args) >= 3 {
+		var (
+			saveas                    string
+			err                       error
+			stdout                    = utilgo.HasFlag("--stdout")
+			reqHeader                 = netlayer.ParseCookieUaRefer()
+			thread, thunk, start, end = netlayer.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
+		)
+		if !stdout {
+			saveas, err = utilgo.GetStorePath(os.Args[2])
+			if err != nil {
+				util.Log.Printf("%v", err)
+				return
+			}
+		}
+		util.Log.Print(saveas)
+		if utilgo.IsURL(os.Args[2]) {
+			err = fslayer.PlayURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, stdout)
+			if err != nil {
+				util.Log.Printf("%v", err)
+			}
+		} else {
+			err = fslayer.Play(os.Args[2], saveas, reqHeader, thread, thunk, start, end, stdout)
+			if err != nil {
+				util.Log.Printf("%v", err)
+			}
+		}
+	} else {
+		util.Log.Print("Usage:disk play filepath/url")
+	}
+}
+
+// Sync files
 func Sync() {
 
 }
 
+// Info print the backend info or file info
 func Info() {
 	if len(os.Args) == 2 {
-		fslayer.GetInfo()
-		fmt.Println("配置文件:" + config.ConfigPath)
+
 	} else {
-		fslayer.GetFileInfo(absPath(os.Args[2]), false)
+
 	}
 }
 
+// Hash print the md5
 func Hash() {
 	if len(os.Args) == 3 {
-		var filePath string = absLocalPath(os.Args[2])
+		var filePath = (os.Args[2])
 		util.PrintMd5(filePath)
 	} else {
 		fmt.Println("Usage:disk hash file")
 	}
 }
 
-func Play() {
-	if len(os.Args) >= 3 {
-		var filePath = absPath(os.Args[2])
-		var dist string = ""
-		if len(os.Args) >= 4 && (!strings.Contains(os.Args[3], "-")) {
-			dist = absLocalPath(os.Args[3])
-		} else {
-			dist = absLocalPath(path.Base(filePath))
-		}
-		stdout := util.HasFlag("--stdout")
-		if strings.HasPrefix(os.Args[2], "http://") || strings.HasPrefix(os.Args[2], "https://") {
-			tokens := strings.Split(dist, "?")
-			fslayer.PlayUrl(os.Args[2], tokens[0], stdout)
-		} else {
-			ok, size, hash := fslayer.GetFileInfo(filePath, stdout)
-			if ok {
-				fslayer.GetPlayStream(filePath, dist, size, hash, stdout)
-			}
-		}
-	} else {
-		fmt.Println("Usage:disk play filepath/url")
-	}
-}
-
+// Help print the help message
 func Help() {
 	fmt.Println(os.Args[0] + " ls info mv cp get put wget play rm mkdir pwd hash config empty search task ")
 }
 
+// Config set or get the app config
 func Config() {
 	if (len(os.Args) == 2) || (os.Args[2] == "list") {
 		config.ConfigList()
 	} else if len(os.Args) == 3 && os.Args[2] == "get" {
-		config.ConfigGet()
 	} else if len(os.Args) == 4 && os.Args[2] == "set" {
-		config.ConfigSet(os.Args[3])
 	} else if len(os.Args) == 4 && os.Args[2] == "setapp" {
-		config.ConfigSetApp(os.Args[3])
 	} else {
 		fmt.Println("Usage:disk config list/get/set/setapp")
 	}
 }
 
+// Task list current backend task
 func Task() {
 	if (len(os.Args) == 2) || (os.Args[2] == "list") {
 		fslayer.GetTaskList()
 	} else if len(os.Args) == 5 && os.Args[2] == "add" {
-		fslayer.AddTask(absPath(os.Args[3]), os.Args[4])
+		fslayer.AddTask((os.Args[3]), os.Args[4])
 	} else if len(os.Args) == 4 && os.Args[2] == "remove" {
 		fslayer.RemoveTask(os.Args[3])
 	} else if len(os.Args) == 4 && os.Args[2] == "info" {
@@ -223,12 +249,14 @@ func Task() {
 	}
 }
 
+// Search form the backend
 func Search() {
 	if len(os.Args) == 3 {
 		fslayer.SearchFile(os.Args[2])
 	}
 }
 
+// Empty clear cache data
 func Empty() {
 	fslayer.Empty()
 }
@@ -270,12 +298,14 @@ func servePreCheck(callback func(int, string) error) {
 	}
 }
 
+// Serve start a http server
 func Serve() {
 	servePreCheck(func(port int, doc string) error {
 		return http.ListenAndServe(":"+strconv.Itoa(port), http.FileServer(http.Dir(doc)))
 	})
 }
 
+// KcpServe start an kcp server
 func KcpServe() {
 	if len(os.Args) == 3 {
 		kcpconn, err := kcp.DialWithOptions(os.Args[2], nil, 10, 3)
@@ -348,43 +378,11 @@ func handleClient(conn io.ReadWriteCloser, file string) {
 	conn.Close()
 }
 
+// Usage print help message
 func Usage() {
 	if len(os.Args) > 1 && os.Args[1] == "-v" {
-		fmt.Println(os.Args[0] + " version: disk/" + config.Version + "\n" + config.ReleaseUrl)
+		fmt.Println(os.Args[0] + " version: disk/" + config.Version + "\n" + config.ReleaseURL)
 	} else {
 		Help()
 	}
-}
-
-func absPath(filePath string) string {
-	filePath = path.Clean(filePath)
-	if path.IsAbs(filePath) {
-		if !strings.HasPrefix(filePath, config.Cfg.Root) {
-			filePath = fmt.Sprintf("%s/%s", config.Cfg.Root, "."+filePath)
-		}
-	} else {
-		filePath = fmt.Sprintf("%s/%s/%s", config.Cfg.Root, config.Cfg.Path, filePath)
-	}
-	return path.Clean(filePath)
-}
-
-func absNoRoot(filePath string) string {
-	filePath = path.Clean(filePath)
-	if path.IsAbs(filePath) {
-		filePath = filePath
-	} else {
-		filePath = fmt.Sprintf("%s/%s", config.Cfg.Path, filePath)
-	}
-	return path.Clean(filePath)
-}
-
-func absLocalPath(filePath string) string {
-	filePath = filepath.Clean(filePath)
-	if filepath.IsAbs(filePath) {
-		filePath = filePath
-	} else {
-		dir, _ := os.Getwd()
-		filePath = filepath.Join(dir, filepath.Base(filePath))
-	}
-	return filepath.Clean(filePath)
 }
