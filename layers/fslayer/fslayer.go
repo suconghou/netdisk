@@ -56,7 +56,12 @@ func Get(filePath string, saveas string, reqHeader http.Header, thread int32, th
 
 // WgetURL download a url file
 func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64) error {
+	var (
+		startstr string
+		thunkstr string
+	)
 	file, cstart, err := utilgo.GetContinue(saveas)
+	defer file.Close()
 	if err != nil {
 		return err
 	}
@@ -66,15 +71,23 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	loader := fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(file.Name())+" ", " ", nil, nil), nil)
 	resp, total, thread, err := loader.Load(start, end)
 	if err != nil {
+		if err == io.EOF {
+			return fmt.Errorf("该文件已经下载完毕")
+		}
 		return err
 	}
-	util.Log.Printf("下载中,线程%d大小%d", thread, total)
+	if start != 0 || end != 0 {
+		startstr = fmt.Sprintf(",%d-%d", start, end)
+	}
+	if thread > 1 {
+		thunkstr = fmt.Sprintf(",%dKB", thunk/1024)
+	}
+	util.Log.Printf("下载中,线程%d%s,大小%d(%s)%s", thread, thunkstr, total, utilgo.ByteFormat(uint64(total)), startstr)
 	n, err := io.Copy(file, resp)
 	if err != nil {
 		return err
 	}
-	util.Log.Printf("下载完毕,%d/%d", n, total)
-	file.Close()
+	util.Log.Printf("\n下载完毕,%d/%d", n, total)
 	return nil
 }
 
@@ -96,6 +109,7 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 		cstart   int64
 		player   bool
 		startstr string
+		thunkstr string
 	)
 	if stdout {
 		if start == -1 {
@@ -130,7 +144,10 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	if start != 0 || end != 0 {
 		startstr = fmt.Sprintf(",%d-%d", start, end)
 	}
-	util.Log.Printf("下载中,线程%d,分块%dKB,大小%d(%s)%s", thread, thunk/1024, total, utilgo.ByteFormat(uint64(total)), startstr)
+	if thread > 1 {
+		thunkstr = fmt.Sprintf(",%dKB", thunk/1024)
+	}
+	util.Log.Printf("下载中,线程%d%s,大小%d(%s)%s", thread, thunkstr, total, utilgo.ByteFormat(uint64(total)), startstr)
 	n, err := io.Copy(file, resp)
 	if err != nil {
 		return err
