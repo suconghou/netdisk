@@ -37,7 +37,7 @@ func Ls() {
 	if len(os.Args) >= 3 {
 		dir = os.Args[2]
 	}
-	err := fslayer.ListDir(dir)
+	err := fslayer.ListDir(dir, false)
 	if err != nil {
 		util.Log.Printf("%v", err)
 	}
@@ -48,7 +48,7 @@ func Cd() {
 	var dir string
 	if len(os.Args) == 3 {
 		dir = os.Args[2]
-		err := fslayer.ListDir(dir)
+		err := fslayer.ListDir(dir, true)
 		if err != nil {
 			util.Log.Printf("%v", err)
 		}
@@ -59,7 +59,10 @@ func Cd() {
 
 // Pwd print current work dir
 func Pwd() {
-
+	err := fslayer.Pwd()
+	if err != nil {
+		util.Log.Printf("%v", err)
+	}
 }
 
 // Mv move file from the backend
@@ -159,7 +162,7 @@ func Wget() {
 	}
 }
 
-// Play play a url or file
+// Play play a url or file(pcs file)
 func Play() {
 	if len(os.Args) >= 3 {
 		var (
@@ -175,8 +178,10 @@ func Play() {
 				util.Log.Printf("%v", err)
 				return
 			}
+		} else {
+			util.Log.SetOutput(os.Stderr)
 		}
-		util.Log.Print(saveas)
+		util.Log.Print("Playing " + saveas)
 		if utilgo.IsURL(os.Args[2]) {
 			err = fslayer.PlayURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, stdout)
 			if err != nil {
@@ -200,8 +205,8 @@ func Sync() {
 
 // Info print the backend info or file info
 func Info() {
-	if len(os.Args) == 3 {
-		err := fslayer.GetFileInfo(os.Args[2])
+	if len(os.Args) >= 3 {
+		err := fslayer.GetFileInfo(os.Args[2], utilgo.HasFlag("--link"))
 		if err != nil {
 			util.Log.Printf("%v", err)
 		}
@@ -258,7 +263,10 @@ func Task() {
 // Search form the backend
 func Search() {
 	if len(os.Args) == 3 {
-		fslayer.SearchFile(os.Args[2])
+		err := fslayer.SearchFile(os.Args[2])
+		if err != nil {
+			util.Log.Printf("%v", err)
+		}
 	}
 }
 

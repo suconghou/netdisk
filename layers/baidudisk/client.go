@@ -46,6 +46,12 @@ func NewClient(token string, root string) *Bclient {
 	}
 }
 
+// Pwd print current dir
+func (bc *Bclient) Pwd(p string) error {
+	fmt.Println(name + bc.root + "  ➜  " + p)
+	return nil
+}
+
 // Ls print dir content in cli
 func (bc *Bclient) Ls(p string) error {
 	js, err := bc.APILs(p)
@@ -99,8 +105,18 @@ func (bc *Bclient) ApiMkdir(p string) (*simplejson.Json, error) {
 	return simplejson.NewJson(body)
 }
 
-func (bc *Bclient) Mv(source string, target string) {
-
+func (bc *Bclient) Mv(source string, target string) error {
+	js, err := bc.APIMv(source, target)
+	if err != nil {
+		return err
+	}
+	errMsg := js.Get("error_msg").MustString()
+	if errMsg != "" {
+		return fmt.Errorf(errMsg)
+	}
+	fmt.Println(name + bc.root)
+	fmt.Println(source + " 已移动至 " + target)
+	return nil
 }
 
 func (bc *Bclient) APIMv(source string, target string) (*simplejson.Json, error) {
@@ -111,8 +127,18 @@ func (bc *Bclient) APIMv(source string, target string) (*simplejson.Json, error)
 	return simplejson.NewJson(body)
 }
 
-func (bc *Bclient) Cp() {
-
+func (bc *Bclient) Cp(source string, target string) error {
+	js, err := bc.APICp(source, target)
+	if err != nil {
+		return err
+	}
+	errMsg := js.Get("error_msg").MustString()
+	if errMsg != "" {
+		return fmt.Errorf(errMsg)
+	}
+	fmt.Println(name + bc.root)
+	fmt.Println(source + " 已复制至 " + target)
+	return nil
 }
 
 func (bc *Bclient) APICp(source string, target string) (*simplejson.Json, error) {
@@ -123,8 +149,18 @@ func (bc *Bclient) APICp(source string, target string) (*simplejson.Json, error)
 	return simplejson.NewJson(body)
 }
 
-func (bc *Bclient) Rm(file string) {
-
+func (bc *Bclient) Rm(file string) error {
+	js, err := bc.APIRm(file)
+	if err != nil {
+		return err
+	}
+	errMsg := js.Get("error_msg").MustString()
+	if errMsg != "" {
+		return fmt.Errorf(errMsg)
+	}
+	fmt.Println(name + bc.root)
+	fmt.Println(file + " 已删除")
+	return nil
 }
 
 func (bc *Bclient) APIRm(file string) (*simplejson.Json, error) {
@@ -148,7 +184,7 @@ func (bc *Bclient) APIGet(file string) (io.ReadCloser, error) {
 }
 
 func (bc *Bclient) GetDownloadURL(file string) string {
-	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "download", bc.token, file)
+	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "download", bc.token, path.Join(bc.root, file))
 }
 
 func (bc *Bclient) Put() {
@@ -209,7 +245,7 @@ func (bc *Bclient) APIInfo() (*simplejson.Json, error) {
 }
 
 // Fileinfo print the file/dir info
-func (bc *Bclient) Fileinfo(p string) error {
+func (bc *Bclient) Fileinfo(p string, dlink bool) error {
 	js, err := bc.APIFileinfo(p)
 	if err != nil {
 		return err
@@ -228,6 +264,7 @@ func (bc *Bclient) Fileinfo(p string) error {
 	b.WriteString("\n修改时间:" + utilgo.DateFormat(item.Get("mtime").MustInt64()))
 	blocks, err := simplejson.NewJson([]byte(item.Get("block_list").MustString()))
 	if err != nil {
+		fmt.Println(b.String())
 		return err
 	}
 	blocksarr := blocks.MustStringArray()
@@ -237,6 +274,9 @@ func (bc *Bclient) Fileinfo(p string) error {
 		for _, v := range blocksarr {
 			b.WriteString("\n哈希块:" + v)
 		}
+	}
+	if dlink {
+		b.WriteString("\n下载地址:" + bc.GetDownloadURL(p))
 	}
 	fmt.Println(b.String())
 	return nil
@@ -251,8 +291,26 @@ func (bc *Bclient) APIFileinfo(file string) (*simplejson.Json, error) {
 	return simplejson.NewJson(body)
 }
 
-func (bc *Bclient) Search() {
-
+func (bc *Bclient) Search(fileName string) error {
+	js, err := bc.APISearch(fileName)
+	if err != nil {
+		return err
+	}
+	b := bytes.Buffer{}
+	var total uint64
+	for i := range js.Get("list").MustArray() {
+		item := js.Get("list").GetIndex(i)
+		size := item.Get("size").MustUint64()
+		total = total + size
+		b.WriteString("\n")
+		b.WriteString(utilgo.StringPadding(utilgo.DateFormat(item.Get("ctime").MustInt64()), 22))
+		b.WriteString(utilgo.StringPadding(utilgo.DateFormat(item.Get("mtime").MustInt64()), 22))
+		b.WriteString(utilgo.StringPadding(utilgo.ByteFormat(size), 10))
+		b.WriteString(utilgo.StringPadding(item.Get("path").MustString(), 20))
+	}
+	fmt.Print(name + bc.root + "  ➜  搜索[" + fileName + "] " + utilgo.ByteFormat(total))
+	fmt.Println(b.String())
+	return nil
 }
 
 func (bc *Bclient) APISearch(name string) (*simplejson.Json, error) {

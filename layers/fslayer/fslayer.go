@@ -1,6 +1,7 @@
 package fslayer
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"netdisk/config"
@@ -14,6 +15,13 @@ import (
 	"github.com/suconghou/utilgo"
 )
 
+func Pwd() error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Pwd(config.Cfg.Pcs.Path)
+	}
+	return nil
+}
+
 func GetInfo() error {
 	if config.IsPcs() {
 		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Info()
@@ -21,12 +29,17 @@ func GetInfo() error {
 	return nil
 }
 
-func ListDir(filePath string) error {
+func ListDir(filePath string, keep bool) error {
 	if config.IsPcs() {
 		if filePath == "" {
 			filePath = config.Cfg.Pcs.Path
 		}
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Ls(filePath)
+		err := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Ls(filePath)
+		if keep && err == nil && filePath != config.Cfg.Pcs.Path {
+			config.Cfg.Pcs.Path = filePath
+			config.Cfg.Save()
+		}
+		return err
 	}
 	return nil
 }
@@ -77,13 +90,14 @@ func Play(filePath string, saveas string, reqHeader http.Header, thread int32, t
 // PlayURL play a url media
 func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, stdout bool) error {
 	var (
-		loader *fastload.Fastloader
-		file   io.WriteCloser
-		err    error
-		cstart int64
+		loader   *fastload.Fastloader
+		file     io.WriteCloser
+		err      error
+		cstart   int64
+		player   bool
+		startstr string
 	)
 	if stdout {
-		util.Log.SetOutput(os.Stderr)
 		if start == -1 {
 			start = 0
 		}
@@ -98,28 +112,38 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 			start = cstart
 		}
 		hook := func(loaded float64, speed float64, remain float64) {
-			if loaded > 5 {
+			if loaded > 2 && !player {
 				utilgo.CallPlayer(saveas)
+				player = true
 			}
 		}
 		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(saveas)+" ", " ", hook, nil), nil)
 	}
+	defer file.Close()
 	resp, total, thread, err := loader.Load(start, end)
 	if err != nil {
+		if err == io.EOF {
+			return fmt.Errorf("该文件已经下载完毕")
+		}
 		return err
 	}
-	util.Log.Printf("下载中,线程%d,大小%d", thread, total)
+	if start != 0 || end != 0 {
+		startstr = fmt.Sprintf(",%d-%d", start, end)
+	}
+	util.Log.Printf("下载中,线程%d,分块%dKB,大小%d(%s)%s", thread, thunk/1024, total, utilgo.ByteFormat(uint64(total)), startstr)
 	n, err := io.Copy(file, resp)
 	if err != nil {
 		return err
 	}
-	util.Log.Printf("下载完毕,%d/%d", n, total)
-	file.Close()
+	util.Log.Printf("\n下载完毕,%d/%d", n, total)
 	return nil
 }
 
-func GetFileInfo(filePath string) error {
-	return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Fileinfo(filePath)
+func GetFileInfo(filePath string, dlink bool) error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Fileinfo(filePath, dlink)
+	}
+	return nil
 }
 
 func PutFile(filePath string, savePath string, fileSize uint64, ondup string) {
@@ -134,20 +158,32 @@ func Mkdir(path string) error {
 	return nil
 }
 
-func DeleteFile(path string) error {
+func DeleteFile(fileName string) error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Rm(fileName)
+	}
 	return nil
 }
 
 func MoveFile(source string, target string) error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Mv(source, target)
+	}
 	return nil
 }
 
 func CopyFile(source string, target string) error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Cp(source, target)
+	}
 	return nil
 }
 
-func SearchFile(fileName string) {
-
+func SearchFile(fileName string) error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Search(fileName)
+	}
+	return nil
 }
 
 func Empty() {
