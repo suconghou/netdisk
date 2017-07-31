@@ -69,7 +69,7 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 		start = cstart
 	}
 	loader := fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(file.Name())+" ", " ", nil, nil), nil)
-	resp, total, thread, err := loader.Load(start, end)
+	resp, total, filesize, thread, err := loader.Load(start, end)
 	if err != nil {
 		if err == io.EOF {
 			return fmt.Errorf("该文件已经下载完毕")
@@ -80,9 +80,9 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 		startstr = fmt.Sprintf(",%d-%d", start, end)
 	}
 	if thread > 1 {
-		thunkstr = fmt.Sprintf(",%dKB", thunk/1024)
+		thunkstr = fmt.Sprintf(",分块%dKB", thunk/1024)
 	}
-	util.Log.Printf("下载中,线程%d%s,大小%d(%s)%s", thread, thunkstr, total, utilgo.ByteFormat(uint64(total)), startstr)
+	util.Log.Printf("下载中,线程%d%s,大小%s/%s(%d/%d)%s", thread, thunkstr, utilgo.ByteFormat(uint64(total)), utilgo.ByteFormat(uint64(filesize)), total, filesize, startstr)
 	n, err := io.Copy(file, resp)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(saveas)+" ", " ", hook, nil), nil)
 	}
 	defer file.Close()
-	resp, total, thread, err := loader.Load(start, end)
+	resp, total, filesize, thread, err := loader.Load(start, end)
 	if err != nil {
 		if err == io.EOF {
 			return fmt.Errorf("该文件已经下载完毕")
@@ -145,9 +145,9 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 		startstr = fmt.Sprintf(",%d-%d", start, end)
 	}
 	if thread > 1 {
-		thunkstr = fmt.Sprintf(",%dKB", thunk/1024)
+		thunkstr = fmt.Sprintf(",分块%dKB", thunk/1024)
 	}
-	util.Log.Printf("下载中,线程%d%s,大小%d(%s)%s", thread, thunkstr, total, utilgo.ByteFormat(uint64(total)), startstr)
+	util.Log.Printf("下载中,线程%d%s,大小%s/%s(%d/%d)%s", thread, thunkstr, utilgo.ByteFormat(uint64(total)), utilgo.ByteFormat(uint64(filesize)), total, filesize, startstr)
 	n, err := io.Copy(file, resp)
 	if err != nil {
 		return err
