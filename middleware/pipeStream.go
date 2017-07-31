@@ -21,7 +21,7 @@ func Pipe(w http.ResponseWriter, r *http.Request, match []string) {
 		url = url + "?" + r.URL.RawQuery
 	}
 	_, err := fastload.Pipe(w, r, url, func(w http.ResponseWriter, header http.Header) {
-		w.Header().Del("Cookie")
+		w.Header().Del("Set-Cookie")
 	})
 	if err != nil {
 		util.Log.Printf("pipe %s error:%s", url, err)
