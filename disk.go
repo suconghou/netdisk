@@ -119,7 +119,7 @@ func daemon() {
 	http.HandleFunc("/", routeMatch)
 	fmt.Println("Starting up on port " + port)
 	fmt.Println("Document root " + doc)
-	bind := fmt.Sprintf("%s:%s", os.Getenv("OPENSHIFT_GO_IP"), os.Getenv("OPENSHIFT_GO_PORT"))
+	bind := fmt.Sprintf("%s:%s", "127.0.0.1", port)
 	log.Fatal(http.ListenAndServe(bind, nil))
 }
 

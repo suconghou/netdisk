@@ -20,6 +20,7 @@ var RoutePath = []routeInfo{
 	{regexp.MustCompile(`^/media/(.+)$`), middleware.MediaStream},
 	{regexp.MustCompile(`^/api/net/(.+)$`), middleware.NetStreamAPI},
 	{regexp.MustCompile(`^/net/(.+)$`), middleware.NetStream},
+	{regexp.MustCompile(`^/(?:(https?):/?)?(?:\w+\.)+\w+/.+$`), middleware.Pipe},
 }
 
 func files(w http.ResponseWriter, r *http.Request, match []string) {
