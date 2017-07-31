@@ -6,12 +6,15 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"netdisk/config"
 	"netdisk/layers/fslayer"
 	"netdisk/util"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"golang.org/x/net/proxy"
 
 	"netdisk/layers/netlayer"
 
@@ -153,7 +156,7 @@ func Wget() {
 			util.Log.Printf("%v", err)
 			return
 		}
-		err = fslayer.WgetURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end)
+		err = fslayer.WgetURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, tryproxy())
 		if err != nil {
 			util.Log.Printf("%v", err)
 		}
@@ -183,7 +186,7 @@ func Play() {
 		}
 		util.Log.Print("Playing " + saveas)
 		if utilgo.IsURL(os.Args[2]) {
-			err = fslayer.PlayURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, stdout)
+			err = fslayer.PlayURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, stdout, tryproxy())
 			if err != nil {
 				util.Log.Printf("%v", err)
 			}
@@ -399,4 +402,25 @@ func Usage() {
 	} else {
 		Help()
 	}
+}
+
+func tryproxy() *http.Transport {
+	if str, err := utilgo.GetParam("--socks5"); err == nil {
+		dialer, err := proxy.SOCKS5("tcp", str, nil, proxy.Direct)
+		if err == nil {
+			return &http.Transport{Dial: dialer.Dial}
+		}
+		util.Log.Printf("error socks5 proxy:%s", err)
+	}
+	if str, err := utilgo.GetParam("--proxy"); err == nil {
+		urli := url.URL{}
+		urlproxy, err := urli.Parse(str)
+		if err == nil {
+			return &http.Transport{
+				Proxy: http.ProxyURL(urlproxy),
+			}
+		}
+		util.Log.Printf("error http(s) proxy:%s", err)
+	}
+	return nil
 }

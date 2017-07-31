@@ -48,17 +48,18 @@ func ListDir(filePath string, keep bool) error {
 func Get(filePath string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64) error {
 	if config.IsPcs() {
 		url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(filePath)
-		return WgetURL(url, saveas, reqHeader, thread, thunk, start, end)
+		return WgetURL(url, saveas, reqHeader, thread, thunk, start, end, nil)
 	}
 	// 腾讯云 cos
 	return nil
 }
 
 // WgetURL download a url file
-func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64) error {
+func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, proxy *http.Transport) error {
 	var (
-		startstr string
-		thunkstr string
+		startstr    string
+		thunkstr    string
+		showsizestr string
 	)
 	file, cstart, err := utilgo.GetContinue(saveas)
 	defer file.Close()
@@ -68,7 +69,7 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	if start == -1 {
 		start = cstart
 	}
-	loader := fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(file.Name())+" ", " ", nil, nil), nil)
+	loader := fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(file.Name())+" ", " ", nil, nil), proxy, nil)
 	resp, total, filesize, thread, err := loader.Load(start, end)
 	if err != nil {
 		if err == io.EOF {
@@ -82,12 +83,15 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	if thread > 1 {
 		thunkstr = fmt.Sprintf(",分块%dKB", thunk/1024)
 	}
-	util.Log.Printf("下载中,线程%d%s,大小%s/%s(%d/%d)%s", thread, thunkstr, utilgo.ByteFormat(uint64(total)), utilgo.ByteFormat(uint64(filesize)), total, filesize, startstr)
+	if total > 0 && filesize > 0 {
+		showsizestr = fmt.Sprintf(",大小%s/%s(%d/%d)", utilgo.ByteFormat(uint64(total)), utilgo.ByteFormat(uint64(filesize)), total, filesize)
+	}
+	util.Log.Printf("下载中,线程%d%s%s%s", thread, thunkstr, showsizestr, startstr)
 	n, err := io.Copy(file, resp)
 	if err != nil {
 		return err
 	}
-	util.Log.Printf("\n下载完毕,%d/%d", n, total)
+	util.Log.Printf("\n下载完毕,%d%s", n, utilgo.BoolString(total > 0, fmt.Sprintf("/%d", total), ""))
 	return nil
 }
 
@@ -95,28 +99,29 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 func Play(filePath string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, stdout bool) error {
 	if config.IsPcs() {
 		url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(filePath)
-		return PlayURL(url, saveas, reqHeader, thread, thunk, start, end, stdout)
+		return PlayURL(url, saveas, reqHeader, thread, thunk, start, end, stdout, nil)
 	}
 	return nil
 }
 
 // PlayURL play a url media
-func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, stdout bool) error {
+func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, stdout bool, proxy *http.Transport) error {
 	var (
-		loader   *fastload.Fastloader
-		file     io.WriteCloser
-		err      error
-		cstart   int64
-		player   bool
-		startstr string
-		thunkstr string
+		loader      *fastload.Fastloader
+		file        io.WriteCloser
+		err         error
+		cstart      int64
+		player      bool
+		startstr    string
+		thunkstr    string
+		showsizestr string
 	)
 	if stdout {
 		if start == -1 {
 			start = 0
 		}
 		file = os.Stdout
-		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(saveas)+" ", " ", nil, os.Stderr), nil)
+		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(saveas)+" ", " ", nil, os.Stderr), proxy, nil)
 	} else {
 		file, cstart, err = utilgo.GetContinue(saveas)
 		if err != nil {
@@ -131,7 +136,7 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 				player = true
 			}
 		}
-		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(saveas)+" ", " ", hook, nil), nil)
+		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(saveas)+" ", " ", hook, nil), proxy, nil)
 	}
 	defer file.Close()
 	resp, total, filesize, thread, err := loader.Load(start, end)
@@ -147,12 +152,15 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	if thread > 1 {
 		thunkstr = fmt.Sprintf(",分块%dKB", thunk/1024)
 	}
-	util.Log.Printf("下载中,线程%d%s,大小%s/%s(%d/%d)%s", thread, thunkstr, utilgo.ByteFormat(uint64(total)), utilgo.ByteFormat(uint64(filesize)), total, filesize, startstr)
+	if total > 0 && filesize > 0 {
+		showsizestr = fmt.Sprintf(",大小%s/%s(%d/%d)", utilgo.ByteFormat(uint64(total)), utilgo.ByteFormat(uint64(filesize)), total, filesize)
+	}
+	util.Log.Printf("下载中,线程%d%s%s%s", thread, thunkstr, showsizestr, startstr)
 	n, err := io.Copy(file, resp)
 	if err != nil {
 		return err
 	}
-	util.Log.Printf("\n下载完毕,%d/%d", n, total)
+	util.Log.Printf("\n下载完毕,%d%s", n, utilgo.BoolString(total > 0, fmt.Sprintf("/%d", total), ""))
 	return nil
 }
 
