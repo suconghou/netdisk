@@ -86,8 +86,10 @@ func cli() {
 		commands.Empty()
 	case "serve":
 		commands.Serve()
-	case "kcp":
-		commands.KcpServe()
+	case "proxy":
+		commands.Proxy()
+	case "nc":
+		commands.Nc()
 	default:
 		commands.Usage()
 	}

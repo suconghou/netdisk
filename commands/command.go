@@ -2,24 +2,20 @@ package commands
 
 import (
 	"flag"
-	"fmt"
-	"io"
-	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"netdisk/config"
 	"netdisk/layers/fslayer"
+	"netdisk/layers/netlayer"
+	"netdisk/middleware"
+	"netdisk/tools"
 	"netdisk/util"
 	"os"
-	"path/filepath"
 	"strconv"
 
-	"golang.org/x/net/proxy"
-
-	"netdisk/layers/netlayer"
-
 	"github.com/suconghou/utilgo"
-	kcp "github.com/xtaci/kcp-go"
+	"golang.org/x/net/proxy"
 )
 
 // Use choose a backend
@@ -227,13 +223,13 @@ func Hash() {
 		var filePath = (os.Args[2])
 		util.PrintMd5(filePath)
 	} else {
-		fmt.Println("Usage:disk hash file")
+		util.Log.Print("Usage:disk hash file")
 	}
 }
 
 // Help print the help message
 func Help() {
-	fmt.Println(os.Args[0] + " ls info mv cp get put wget play rm mkdir pwd hash config empty search task ")
+	util.Log.Print(os.Args[0] + " ls info mv cp get put wget play rm mkdir pwd hash config empty search task ")
 }
 
 // Config set or get the app config
@@ -244,7 +240,7 @@ func Config() {
 	} else if len(os.Args) == 4 && os.Args[2] == "set" {
 	} else if len(os.Args) == 4 && os.Args[2] == "setapp" {
 	} else {
-		fmt.Println("Usage:disk config list/get/set/setapp")
+		util.Log.Print("Usage:disk config list/get/set/setapp")
 	}
 }
 
@@ -259,7 +255,7 @@ func Task() {
 	} else if len(os.Args) == 4 && os.Args[2] == "info" {
 		fslayer.GetTaskInfo(os.Args[3])
 	} else {
-		fmt.Println("Usage:disk task list/add/info/remove")
+		util.Log.Print("Usage:disk task list/add/info/remove")
 	}
 }
 
@@ -278,127 +274,91 @@ func Empty() {
 	fslayer.Empty()
 }
 
-func servePreCheck(callback func(int, string) error) {
-	var (
-		port int
-		root string
-	)
-	var ferr flag.ErrorHandling
-	var CommandLine = flag.NewFlagSet(os.Args[0], ferr)
-	CommandLine.IntVar(&port, "p", 6060, "http server port")
-	CommandLine.StringVar(&root, "d", "./", "root document dir")
-	err := CommandLine.Parse(os.Args[2:])
-	if err != nil {
-		os.Exit(2)
-	}
-	pwd, err := os.Getwd()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	var doc string
-	if filepath.IsAbs(root) {
-		doc = root
-	} else {
-		doc = filepath.Join(pwd, root)
-	}
-	if _, err := os.Stat(doc); err == nil {
-		fmt.Println("Server listening on port " + strconv.Itoa(port))
-		fmt.Println("Document root " + doc)
-		err = callback(port, doc)
-		if err != nil {
-			fmt.Println("Error listening:", err.Error())
-			os.Exit(1)
-		}
-	} else {
-		fmt.Println(doc + " not exists")
-	}
-}
-
-// Serve start a http server
+// Serve start a http file server
 func Serve() {
-	servePreCheck(func(port int, doc string) error {
-		return http.ListenAndServe(":"+strconv.Itoa(port), http.FileServer(http.Dir(doc)))
-	})
+	var (
+		port        int
+		root        string
+		ferr        flag.ErrorHandling
+		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
+	)
+	CommandLine.IntVar(&port, "p", 6060, "listen port")
+	CommandLine.StringVar(&root, "d", "./", "document root")
+	err := CommandLine.Parse(os.Args[2:])
+	if err == nil {
+		root, err = utilgo.PathMustHave(root)
+		if err == nil {
+			util.Log.Printf("Starting up on port %d", port)
+			util.Log.Printf("Document root %s", root)
+			err = http.ListenAndServe(":"+strconv.Itoa(port), http.FileServer(http.Dir(root)))
+		}
+	}
+	if err != nil {
+		util.Log.Print(err)
+	}
 }
 
-// KcpServe start an kcp server
-func KcpServe() {
-	if len(os.Args) == 3 {
-		kcpconn, err := kcp.DialWithOptions(os.Args[2], nil, 10, 3)
-		if err != nil {
-			log.Fatal(err)
-		}
-		kcpconn.SetStreamMode(true)
-		kcpconn.SetWriteDelay(true)
-		kcpconn.SetNoDelay(1, 10, 2, 1)
-		kcpconn.SetWindowSize(1024, 1024)
-		kcpconn.SetMtu(1350)
-		kcpconn.SetACKNoDelay(true)
-		if err := kcpconn.SetDSCP(0); err != nil {
-			log.Println("SetDSCP:", err)
-		}
-		if err := kcpconn.SetReadBuffer(4194304); err != nil {
-			log.Println("SetReadBuffer:", err)
-		}
-		if err := kcpconn.SetWriteBuffer(4194304); err != nil {
-			log.Println("SetWriteBuffer:", err)
-		}
-		if _, err := io.Copy(os.Stdout, kcpconn); err != nil {
-			log.Fatal(err)
-		}
-		kcpconn.Close()
-
-	} else {
-		servePreCheck(func(port int, doc string) error {
-			lis, err := kcp.ListenWithOptions("0.0.0.0:"+strconv.Itoa(port), nil, 10, 3)
-			if err != nil {
-				return err
-			}
+// Proxy enable a http_proxy server or socks5 server
+func Proxy() {
+	var (
+		port        int
+		ferr        flag.ErrorHandling
+		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
+	)
+	CommandLine.IntVar(&port, "p", 8123, "listen port")
+	err := CommandLine.Parse(os.Args[2:])
+	if err == nil {
+		util.Log.Printf("Starting up on port %d", port)
+		l, err := net.Listen("tcp", ":"+strconv.Itoa(port))
+		if err == nil {
 			for {
-				if conn, err := lis.AcceptKCP(); err == nil {
-					fmt.Println(conn)
-					conn.SetStreamMode(true)
-					conn.SetWriteDelay(true)
-					conn.SetNoDelay(1, 10, 2, 1)
-					conn.SetMtu(1350)
-					conn.SetWindowSize(1024, 1024)
-					conn.SetACKNoDelay(true)
-					if err := lis.SetDSCP(0); err != nil {
-						log.Println("SetDSCP:", err)
-					}
-					if err := lis.SetReadBuffer(4194304); err != nil {
-						log.Println("SetReadBuffer:", err)
-					}
-					if err := lis.SetWriteBuffer(4194304); err != nil {
-						log.Println("SetWriteBuffer:", err)
-					}
-					go handleClient(conn, doc)
+				client, err := l.Accept()
+				if err == nil {
+					go func() {
+						err := middleware.Proxy(client)
+						if err != nil {
+							util.Log.Print(err)
+						}
+					}()
 				} else {
-					log.Printf("Error %+v", err)
+					util.Log.Print(err)
 				}
 			}
-
-		})
+		}
+	}
+	if err != nil {
+		util.Log.Print(err)
 	}
 }
 
-func handleClient(conn io.ReadWriteCloser, file string) {
-	f, err := os.OpenFile(file, os.O_RDWR, 0755)
-	fmt.Println(f)
+// Nc like but use kcp to transfer data
+func Nc() {
+	var (
+		address string
+		port    int
+	)
+	str, err := utilgo.GetParam("-l")
 	if err != nil {
-		log.Fatal(err)
+		port, err = strconv.Atoi(os.Args[3])
+		if err == nil {
+			address = os.Args[2]
+			err = tools.Nc(address, port, false)
+		}
+	} else {
+		port, err = strconv.Atoi(str)
+		if err == nil {
+			err = tools.Nc(address, port, true)
+		}
 	}
-	if _, err := io.Copy(conn, f); err != nil {
-		log.Fatal(err)
+	if err != nil {
+		util.Debug.Printf("nc error:%s", err)
 	}
-	conn.Close()
 }
 
 // Usage print help message
 func Usage() {
 	if len(os.Args) > 1 && os.Args[1] == "-v" {
-		fmt.Println(os.Args[0] + " version: disk/" + config.Version + "\n" + config.ReleaseURL)
+		util.Log.Print(os.Args[0] + " version: disk/" + config.Version + "\n" + config.ReleaseURL)
 	} else {
 		Help()
 	}
