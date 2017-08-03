@@ -12,6 +12,7 @@ import (
 	"netdisk/tools"
 	"netdisk/util"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/suconghou/utilgo"
@@ -218,23 +219,25 @@ func Info() {
 }
 
 // Hash print the sha1sum sha256sum
-func Hash() {
-	if len(os.Args) == 3 {
-		var filePath = (os.Args[2])
-		util.PrintMd5(filePath)
+func Hash(t string) {
+	if len(os.Args) >= 3 {
+		file, err := utilgo.GetOpenFile(os.Args[2])
+		if err == nil {
+			defer file.Close()
+			if t == "" {
+				t, _ = utilgo.GetParam("-t")
+			}
+			x, err := utilgo.GetFileHash(file, t)
+			if err == nil {
+				util.Log.Printf("%x  %s", x, filepath.Base(file.Name()))
+			}
+		}
+		if err != nil {
+			util.Log.Print(err)
+		}
 	} else {
 		util.Log.Print("Usage:disk hash file")
 	}
-}
-
-// Md5 print the file md5sum
-func Md5() {
-
-}
-
-// Crc32 print the file crc32
-func Crc32() {
-
 }
 
 // Help print the help message

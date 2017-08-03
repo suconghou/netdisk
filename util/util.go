@@ -32,51 +32,6 @@ func DiskName(code string) string {
 
 }
 
-func DateS(times int64) string {
-	return time.Unix(times, 0).Format("2006/01/02 15:04:05")
-}
-
-func PrintMd5(filePath string) {
-	file, err := os.Open(filePath)
-	if err == nil {
-		md5h := md5.New()
-		io.Copy(md5h, file)
-		fmt.Printf("%s   %x\n", filePath, md5h.Sum([]byte(""))) //md5
-	} else {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
-func FileOk(filePath string) (uint64, string) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println(err)
-			os.Exit(1)
-		} else if os.IsPermission(err) {
-			fmt.Println(err)
-			os.Exit(1)
-		} else {
-			panic(err)
-		}
-	} else {
-		defer file.Close()
-		stat, err := os.Stat(filePath)
-		if err != nil {
-			panic(err)
-		} else {
-			fileSize := uint64(stat.Size())
-			md5h := md5.New()
-			io.Copy(md5h, file)
-			md5Str := hex.EncodeToString(md5h.Sum([]byte("")))
-			// fmt.Printf("%s  %s  %s \n", filePath, md5Str, ByteFormat(fileSize)) //md5
-			return fileSize, md5Str
-		}
-	}
-	return 0, ""
-}
-
 func GetCrc32AndMd5(filePath string) (string, string) {
 	file, err := os.Open(filePath)
 	if err != nil {

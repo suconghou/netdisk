@@ -71,11 +71,11 @@ func cli() {
 	case "info":
 		commands.Info()
 	case "hash":
-		commands.Hash()
-	case "md5sum":
-		commands.Md5()
+		commands.Hash("")
+	case "md5", "md5sum":
+		commands.Hash("md5")
 	case "crc32":
-		commands.Crc32()
+		commands.Hash("crc32")
 	case "play":
 		commands.Play()
 	case "help":
