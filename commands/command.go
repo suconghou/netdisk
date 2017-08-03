@@ -217,7 +217,7 @@ func Info() {
 	}
 }
 
-// Hash print the md5
+// Hash print the sha1sum sha256sum
 func Hash() {
 	if len(os.Args) == 3 {
 		var filePath = (os.Args[2])
@@ -225,6 +225,16 @@ func Hash() {
 	} else {
 		util.Log.Print("Usage:disk hash file")
 	}
+}
+
+// Md5 print the file md5sum
+func Md5() {
+
+}
+
+// Crc32 print the file crc32
+func Crc32() {
+
 }
 
 // Help print the help message

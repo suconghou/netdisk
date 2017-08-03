@@ -183,6 +183,7 @@ func (bc *Bclient) APIGet(file string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
+// GetDownloadURL return download url
 func (bc *Bclient) GetDownloadURL(file string) string {
 	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "download", bc.token, path.Join(bc.root, file))
 }
@@ -262,21 +263,24 @@ func (bc *Bclient) Fileinfo(p string, dlink bool) error {
 	b.WriteString(fmt.Sprintf("\n文件字节:%d\n文件标识:%d", item.Get("size").MustInt64(), item.Get("fs_id").MustInt64()))
 	b.WriteString("\n创建时间:" + utilgo.DateFormat(item.Get("ctime").MustInt64()))
 	b.WriteString("\n修改时间:" + utilgo.DateFormat(item.Get("mtime").MustInt64()))
-	blocks, err := simplejson.NewJson([]byte(item.Get("block_list").MustString()))
-	if err != nil {
-		fmt.Println(b.String())
-		return err
-	}
-	blocksarr := blocks.MustStringArray()
-	if len(blocksarr) == 1 {
-		b.WriteString("\n文件哈希:" + blocksarr[0])
-	} else {
-		for _, v := range blocksarr {
-			b.WriteString("\n哈希块:" + v)
+	blockstr := item.Get("block_list").MustString()
+	if blockstr != "" {
+		blocks, err := simplejson.NewJson([]byte(item.Get("block_list").MustString()))
+		if err != nil {
+			fmt.Println(b.String())
+			return err
 		}
-	}
-	if dlink {
-		b.WriteString("\n下载地址:" + bc.GetDownloadURL(p))
+		blocksarr := blocks.MustStringArray()
+		if len(blocksarr) == 1 {
+			b.WriteString("\n文件哈希:" + blocksarr[0])
+		} else {
+			for _, v := range blocksarr {
+				b.WriteString("\n哈希块:" + v)
+			}
+		}
+		if dlink {
+			b.WriteString("\n下载地址:" + bc.GetDownloadURL(p))
+		}
 	}
 	fmt.Println(b.String())
 	return nil
