@@ -6,6 +6,8 @@ import (
 	"netdisk/layers/baidudisk"
 	"regexp"
 
+	"github.com/suconghou/utilgo"
+
 	"github.com/suconghou/fastload/fastload"
 )
 
@@ -19,11 +21,9 @@ var route = []routeInfo{
 	{regexp.MustCompile(`^info/(.+)$`), info},
 }
 
-// NetStream response stream data
-func NetStream(w http.ResponseWriter, r *http.Request, match []string) {
-	file := match[1]
-	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(file)
-	fastload.Pipe(w, r, url, nil)
+var filter = func(out http.Header, res *http.Response) int {
+	utilgo.UseHTTPCache(out, 259200)
+	return res.StatusCode
 }
 
 // NetStreamAPI response json data
@@ -38,22 +38,28 @@ func NetStreamAPI(w http.ResponseWriter, r *http.Request, match []string) {
 		}
 	}
 	if !found {
-		fallback(w, r)
+		fallback(w, r, match)
 	}
 }
 
 func ls(w http.ResponseWriter, r *http.Request, match []string) {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).APILsURL(file)
-	fastload.Pipe(w, r, url, nil)
+	fastload.Pipe(w, r, url, filter)
 }
 
 func info(w http.ResponseWriter, r *http.Request, match []string) {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).APIFileInfoURL(file)
-	fastload.Pipe(w, r, url, nil)
+	fastload.Pipe(w, r, url, filter)
 }
 
-func fallback(w http.ResponseWriter, r *http.Request) {
-	http.NotFound(w, r)
+func get(w http.ResponseWriter, r *http.Request, match []string) {
+	file := match[1]
+	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(file)
+	fastload.Pipe(w, r, url, filter)
+}
+
+func fallback(w http.ResponseWriter, r *http.Request, match []string) {
+	get(w, r, match)
 }

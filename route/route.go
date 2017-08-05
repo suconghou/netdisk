@@ -18,8 +18,7 @@ var RoutePath = []routeInfo{
 	{regexp.MustCompile(`^/imgs/(.+)$`), imgs},
 	{regexp.MustCompile(`^/api/media/(.+)$`), middleware.MediaStreamAPI},
 	{regexp.MustCompile(`^/media/(.+)$`), middleware.MediaStream},
-	{regexp.MustCompile(`^/api/net/(.+)$`), middleware.NetStreamAPI},
-	{regexp.MustCompile(`^/net/(.+)$`), middleware.NetStream},
+	{regexp.MustCompile(`^/net/(.+)$`), middleware.NetStreamAPI},
 	{regexp.MustCompile(`^/(?:(https?):/?)?(?:\w+\.)+\w+(?::\d+)?/.*$`), middleware.Pipe},
 }
 
