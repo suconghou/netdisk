@@ -354,13 +354,15 @@ func Nc() {
 	if err != nil {
 		port, err = strconv.Atoi(os.Args[3])
 		if err == nil {
-			address = os.Args[2]
-			err = tools.Nc(address, port, false)
+			if len(os.Args) >= 6 {
+				address = os.Args[2]
+				err = tools.Nc(address, port, os.Args[4], os.Args[5])
+			}
 		}
 	} else {
 		port, err = strconv.Atoi(str)
 		if err == nil {
-			err = tools.Nc(address, port, true)
+			err = tools.Nc(address, port, "", "")
 		}
 	}
 	if err != nil {

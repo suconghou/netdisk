@@ -164,9 +164,10 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	return nil
 }
 
+// GetFileInfo print file info
 func GetFileInfo(filePath string, dlink bool) error {
 	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Fileinfo(filePath, dlink)
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).FileInfo(filePath, dlink)
 	}
 	return nil
 }

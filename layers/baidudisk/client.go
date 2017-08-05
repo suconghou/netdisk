@@ -75,36 +75,51 @@ func (bc *Bclient) Ls(p string) error {
 	return nil
 }
 
+// APILsURL return ls url string
+func (bc *Bclient) APILsURL(p string) string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "list", bc.token, path.Join(bc.root, p))
+}
+
 // APILs response ls
 func (bc *Bclient) APILs(p string) (*simplejson.Json, error) {
-	body, err := httpGet(fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "list", bc.token, path.Join(bc.root, p)))
+	body, err := httpGet(bc.APILsURL(p))
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
+// Cd show files list
 func (bc *Bclient) Cd() {
 
 }
 
+// APICd return resp cd
 func (bc *Bclient) APICd(p string) (*simplejson.Json, error) {
 	bc.path = p
 	return bc.APILs(p)
 }
 
+// Mkdir mkdir a dir
 func (bc *Bclient) Mkdir(p string) {
 
 }
 
-func (bc *Bclient) ApiMkdir(p string) (*simplejson.Json, error) {
-	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "mkdir", bc.token, path.Join(bc.root, p)), "application/x-www-form-urlencoded", nil)
+// APIMkdirURL return mkdir api url
+func (bc *Bclient) APIMkdirURL(p string) string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "mkdir", bc.token, path.Join(bc.root, p))
+}
+
+// APIMkdir return api resp
+func (bc *Bclient) APIMkdir(p string) (*simplejson.Json, error) {
+	body, err := httpPost(bc.APIMkdirURL(p), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
+// Mv move files
 func (bc *Bclient) Mv(source string, target string) error {
 	js, err := bc.APIMv(source, target)
 	if err != nil {
@@ -119,14 +134,21 @@ func (bc *Bclient) Mv(source string, target string) error {
 	return nil
 }
 
+// APIMvURL return mv api url
+func (bc *Bclient) APIMvURL(source string, target string) string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&from=%s&to=%s", bc.apiURL, "move", bc.token, path.Join(bc.root, source), path.Join(bc.root, target))
+}
+
+// APIMv return mv resp
 func (bc *Bclient) APIMv(source string, target string) (*simplejson.Json, error) {
-	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&from=%s&to=%s", bc.apiURL, "move", bc.token, path.Join(bc.root, source), path.Join(bc.root, target)), "application/x-www-form-urlencoded", nil)
+	body, err := httpPost(bc.APIMvURL(source, target), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
+// Cp copy files
 func (bc *Bclient) Cp(source string, target string) error {
 	js, err := bc.APICp(source, target)
 	if err != nil {
@@ -141,14 +163,21 @@ func (bc *Bclient) Cp(source string, target string) error {
 	return nil
 }
 
+// APICpURL return cp url
+func (bc *Bclient) APICpURL(source string, target string) string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&from=%s&to=%s", bc.apiURL, "copy", bc.token, path.Join(bc.root, source), path.Join(bc.root, target))
+}
+
+// APICp return cp resp
 func (bc *Bclient) APICp(source string, target string) (*simplejson.Json, error) {
-	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&from=%s&to=%s", bc.apiURL, "copy", bc.token, path.Join(bc.root, source), path.Join(bc.root, target)), "application/x-www-form-urlencoded", nil)
+	body, err := httpPost(bc.APICpURL(source, target), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
+// Rm delete files
 func (bc *Bclient) Rm(file string) error {
 	js, err := bc.APIRm(file)
 	if err != nil {
@@ -163,18 +192,26 @@ func (bc *Bclient) Rm(file string) error {
 	return nil
 }
 
+// APIRmURL return rm api url
+func (bc *Bclient) APIRmURL(file string) string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "delete", bc.token, path.Join(bc.root, file))
+}
+
+// APIRm return rm resp
 func (bc *Bclient) APIRm(file string) (*simplejson.Json, error) {
-	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "delete", bc.token, path.Join(bc.root, file)), "application/x-www-form-urlencoded", nil)
+	body, err := httpPost(bc.APIRmURL(file), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
+// Get return file reader
 func (bc *Bclient) Get(file string) (io.ReadCloser, error) {
 	return bc.APIGet(file)
 }
 
+// APIGet return file reader
 func (bc *Bclient) APIGet(file string) (io.ReadCloser, error) {
 	resp, err := httpGetResp(bc.GetDownloadURL(file))
 	if err != nil {
@@ -188,32 +225,46 @@ func (bc *Bclient) GetDownloadURL(file string) string {
 	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "download", bc.token, path.Join(bc.root, file))
 }
 
+// Put upload files
 func (bc *Bclient) Put() {
 
 }
 
-func (bc *Bclient) APIPut(savePath string, overwrite bool) (*simplejson.Json, error) {
-	var ondup = "newcopy"
+// APIPutURL return upload url
+func (bc *Bclient) APIPutURL(savePath string, overwrite bool) string {
+	ondup := "newcopy"
 	if overwrite {
 		ondup = "overwrite"
 	}
-	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&path=%s&ondup=%s", bc.uploadURL, "upload", bc.token, path.Join(bc.root, savePath), ondup), "application/x-www-form-urlencoded", nil)
+	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s&ondup=%s", bc.uploadURL, "upload", bc.token, path.Join(bc.root, savePath), ondup)
+}
+
+// APIPut return put resp
+func (bc *Bclient) APIPut(savePath string, overwrite bool) (*simplejson.Json, error) {
+	body, err := httpPost(bc.APIPutURL(savePath, overwrite), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
+// RapidPut upload files
 func (bc *Bclient) RapidPut() {
 
 }
 
-func (bc *Bclient) APIRapidPut(savePath string, fileSize uint64, md5Str string, sliceMd5 string, contentCrc32 string, overwrite bool) (*simplejson.Json, error) {
-	var ondup = "newcopy"
+// APIRapidPutURL return rapid upload url
+func (bc *Bclient) APIRapidPutURL(savePath string, fileSize int64, md5Str string, sliceMd5 string, contentCrc32 string, overwrite bool) string {
+	ondup := "newcopy"
 	if overwrite {
 		ondup = "overwrite"
 	}
-	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&path=%s&content-length=%d&content-md5=%s&slice-md5=%s&content-crc32=%s&ondup=%s", bc.uploadURL, "rapidupload", bc.token, path.Join(bc.root, savePath), fileSize, md5Str, sliceMd5, contentCrc32, ondup), "application/x-www-form-urlencoded", nil)
+	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s&content-length=%d&content-md5=%s&slice-md5=%s&content-crc32=%s&ondup=%s", bc.uploadURL, "rapidupload", bc.token, path.Join(bc.root, savePath), fileSize, md5Str, sliceMd5, contentCrc32, ondup)
+}
+
+// APIRapidPut return RapidPut resp
+func (bc *Bclient) APIRapidPut(savePath string, fileSize int64, md5Str string, sliceMd5 string, contentCrc32 string, overwrite bool) (*simplejson.Json, error) {
+	body, err := httpPost(bc.APIRapidPutURL(savePath, fileSize, md5Str, sliceMd5, contentCrc32, overwrite), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -236,18 +287,23 @@ func (bc *Bclient) Info() error {
 	return nil
 }
 
+// APIInfoURL return disk info url
+func (bc *Bclient) APIInfoURL() string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s", bc.infoURL, "info", bc.token)
+}
+
 // APIInfo response usage info
 func (bc *Bclient) APIInfo() (*simplejson.Json, error) {
-	body, err := httpGet(fmt.Sprintf("%s?method=%s&access_token=%s", bc.infoURL, "info", bc.token))
+	body, err := httpGet(bc.APIInfoURL())
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
-// Fileinfo print the file/dir info
-func (bc *Bclient) Fileinfo(p string, dlink bool) error {
-	js, err := bc.APIFileinfo(p)
+// FileInfo print the file/dir info
+func (bc *Bclient) FileInfo(p string, dlink bool) error {
+	js, err := bc.APIFileInfo(p)
 	if err != nil {
 		return err
 	}
@@ -286,15 +342,21 @@ func (bc *Bclient) Fileinfo(p string, dlink bool) error {
 	return nil
 }
 
-// APIFileinfo response info
-func (bc *Bclient) APIFileinfo(file string) (*simplejson.Json, error) {
-	body, err := httpGet(fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "meta", bc.token, path.Join(bc.root, file)))
+// APIFileInfoURL return fileinfo url
+func (bc *Bclient) APIFileInfoURL(file string) string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "meta", bc.token, path.Join(bc.root, file))
+}
+
+// APIFileInfo response info
+func (bc *Bclient) APIFileInfo(file string) (*simplejson.Json, error) {
+	body, err := httpGet(bc.APIFileInfoURL(file))
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
+// Search search files
 func (bc *Bclient) Search(fileName string) error {
 	js, err := bc.APISearch(fileName)
 	if err != nil {
@@ -317,68 +379,109 @@ func (bc *Bclient) Search(fileName string) error {
 	return nil
 }
 
+// APISearchURL return api search url
+func (bc *Bclient) APISearchURL(name string) string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s&wd=%s&re=%s", bc.apiURL, "search", bc.token, bc.root, name, "1")
+}
+
+// APISearch return search resp
 func (bc *Bclient) APISearch(name string) (*simplejson.Json, error) {
-	body, err := httpGet(fmt.Sprintf("%s?method=%s&access_token=%s&path=%s&wd=%s&re=%s", bc.apiURL, "search", bc.token, bc.root, name, "1"))
+	body, err := httpGet(bc.APISearchURL(name))
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
-func (bc *Bclient) Taskadd() {
+// TaskAdd add task
+func (bc *Bclient) TaskAdd() {
 
 }
 
-func (bc *Bclient) ApiTaskadd(savePath string, sourceURL string) (*simplejson.Json, error) {
-	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&save_path=%s/&source_url=%s&app_id=250528", bc.taskURL, "add_task", bc.token, savePath, sourceURL), "application/x-www-form-urlencoded", nil)
+// APITaskAddURL retrun taskadd url
+func (bc *Bclient) APITaskAddURL(savePath string, sourceURL string) string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&save_path=%s/&source_url=%s&app_id=250528", bc.taskURL, "add_task", bc.token, savePath, sourceURL)
+}
+
+// APITaskAdd return taskadd resp
+func (bc *Bclient) APITaskAdd(savePath string, sourceURL string) (*simplejson.Json, error) {
+	body, err := httpPost(bc.APITaskAddURL(savePath, sourceURL), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
-func (bc *Bclient) Tasklist() {
+// TaskList get tasklist
+func (bc *Bclient) TaskList() {
 
 }
 
-func (bc *Bclient) APITasklist() (*simplejson.Json, error) {
-	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&status=255&app_id=250528&need_task_info=1", bc.taskURL, "list_task", bc.token), "application/x-www-form-urlencoded", nil)
+// APITaskListURL return tasklist url
+func (bc *Bclient) APITaskListURL() string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&status=255&app_id=250528&need_task_info=1", bc.taskURL, "list_task", bc.token)
+}
+
+// APITaskList retrun tasklist resp
+func (bc *Bclient) APITaskList() (*simplejson.Json, error) {
+	body, err := httpPost(bc.APITaskListURL(), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
-func (bc *Bclient) Taskinfo() {
+// TaskInfo get taskinfo
+func (bc *Bclient) TaskInfo() {
 
 }
 
-func (bc *Bclient) APITaskinfo(ids string) (*simplejson.Json, error) {
-	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&task_ids=%s&app_id=250528", bc.taskURL, "query_task", bc.token, ids), "application/x-www-form-urlencoded", nil)
+// APITaskInfoURL return taskinfo url
+func (bc *Bclient) APITaskInfoURL(ids string) string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&task_ids=%s&app_id=250528", bc.taskURL, "query_task", bc.token, ids)
+}
+
+// APITaskInfo return taskinfo resp
+func (bc *Bclient) APITaskInfo(ids string) (*simplejson.Json, error) {
+	body, err := httpPost(bc.APITaskInfoURL(ids), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
-func (bc *Bclient) Taskremove() {
+// TaskRemove remove task
+func (bc *Bclient) TaskRemove() {
 
 }
 
-func (bc *Bclient) APITaskremove(id string) (*simplejson.Json, error) {
-	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&task_id=%s&app_id=250528", bc.taskURL, "cancel_task", bc.token, id), "application/x-www-form-urlencoded", nil)
+// APITaskRemoveURL return taskremove url
+func (bc *Bclient) APITaskRemoveURL(id string) string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&task_id=%s&app_id=250528", bc.taskURL, "cancel_task", bc.token, id)
+}
+
+// APITaskRemove return taskremove resp
+func (bc *Bclient) APITaskRemove(id string) (*simplejson.Json, error) {
+	body, err := httpPost(bc.APITaskRemoveURL(id), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
 	return simplejson.NewJson(body)
 }
 
+// Clear empty recycle
 func (bc *Bclient) Clear() {
 
 }
 
+// APIClearURL return clear url
+func (bc *Bclient) APIClearURL() string {
+	return fmt.Sprintf("%s?method=%s&access_token=%s&type=%s", bc.apiURL, "delete", bc.token, "recycle")
+}
+
+// APIClear return clear resp
 func (bc *Bclient) APIClear() (*simplejson.Json, error) {
-	body, err := httpPost(fmt.Sprintf("%s?method=%s&access_token=%s&type=%s", bc.apiURL, "delete", bc.token, "recycle"), "application/x-www-form-urlencoded", nil)
+	body, err := httpPost(bc.APIClearURL(), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
