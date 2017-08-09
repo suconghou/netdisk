@@ -30,7 +30,7 @@ func Pipe(w http.ResponseWriter, r *http.Request, match []string) {
 	_, err := fastload.Pipe(w, r, url, func(out http.Header, res *http.Response) int {
 		out.Del("Set-Cookie")
 		return res.StatusCode
-	})
+	}, 3600, nil)
 	if err != nil {
 		util.Log.Printf("pipe %s error:%s", url, err)
 	}
@@ -110,7 +110,7 @@ func (p proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		return
 	}
-	_, err = fastload.Pipe(w, r, url, nil)
+	_, err = fastload.Pipe(w, r, url, nil, 3600, nil)
 	if err != nil {
 		util.Log.Printf("%s proxy error:%s", url, err)
 	}

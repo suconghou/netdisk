@@ -96,6 +96,8 @@ func cli() {
 		commands.Serve()
 	case "proxy":
 		commands.Proxy()
+	case "reverse":
+		commands.HTTPProxy()
 	case "nc":
 		commands.Nc()
 	default:

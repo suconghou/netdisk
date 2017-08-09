@@ -104,6 +104,13 @@ disk wget file/url --thin // set to 256K
 `--ua "user agent string"`
 
 
+`--socks` use socks5 
+
+`--proxy` use http/https proxy  
+
+`--socks 127.0.0.1:1080`
+
+-u https://backend --proxy http://your_http_proxy:6056 
 
 ### other flag
 

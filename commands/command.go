@@ -4,7 +4,6 @@ import (
 	"flag"
 	"net"
 	"net/http"
-	"net/url"
 	"netdisk/config"
 	"netdisk/layers/fslayer"
 	"netdisk/layers/netlayer"
@@ -16,7 +15,6 @@ import (
 	"strconv"
 
 	"github.com/suconghou/utilgo"
-	"golang.org/x/net/proxy"
 )
 
 // Use choose a backend
@@ -150,12 +148,17 @@ func Wget() {
 			saveas, err               = utilgo.GetStorePath(os.Args[2])
 		)
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
 			return
 		}
-		err = fslayer.WgetURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, tryproxy())
+		transport, err := util.GetProxy()
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
+			return
+		}
+		err = fslayer.WgetURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, transport)
+		if err != nil {
+			util.Log.Print(err)
 		}
 	} else {
 		util.Log.Print("Usage:disk wget url")
@@ -183,7 +186,12 @@ func Play() {
 		}
 		util.Log.Print("Playing " + saveas)
 		if utilgo.IsURL(os.Args[2]) {
-			err = fslayer.PlayURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, stdout, tryproxy())
+			transport, err := util.GetProxy()
+			if err != nil {
+				util.Log.Print(err)
+				return
+			}
+			err = fslayer.PlayURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, stdout, transport)
 			if err != nil {
 				util.Log.Printf("%v", err)
 			}
@@ -301,8 +309,7 @@ func Serve() {
 	if err == nil {
 		root, err = utilgo.PathMustHave(root)
 		if err == nil {
-			util.Log.Printf("Starting up on port %d", port)
-			util.Log.Printf("Document root %s", root)
+			util.Log.Printf("Starting up on port %d\nDocument root %s", port, root)
 			err = http.ListenAndServe(":"+strconv.Itoa(port), http.FileServer(http.Dir(root)))
 		}
 	}
@@ -344,6 +351,37 @@ func Proxy() {
 	}
 }
 
+// HTTPProxy is a http reverse proxy like nginx but can use given upstream
+func HTTPProxy() {
+	var (
+		port        int
+		url         string
+		proxy       string
+		socks       string
+		ferr        flag.ErrorHandling
+		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
+		transport   *http.Transport
+	)
+	CommandLine.IntVar(&port, "p", 8123, "listen port")
+	CommandLine.StringVar(&url, "u", "http://127.0.0.1:8080", "reverse url")
+	CommandLine.StringVar(&proxy, "proxy", "", "http proxy")
+	CommandLine.StringVar(&socks, "socks", "", "socks proxy")
+	err := CommandLine.Parse(os.Args[2:])
+	if err == nil {
+		if socks != "" {
+			transport, err = util.MakeSocksProxy(socks)
+		} else if proxy != "" {
+			transport, err = util.MakeHTTPProxy(proxy)
+		}
+		if err == nil {
+			err = tools.HTTPProxy(port, url, transport)
+		}
+	}
+	if err != nil {
+		util.Log.Print(err)
+	}
+}
+
 // Nc like but use kcp to transfer data
 func Nc() {
 	var (
@@ -377,25 +415,4 @@ func Usage() {
 	} else {
 		Help()
 	}
-}
-
-func tryproxy() *http.Transport {
-	if str, err := utilgo.GetParam("--socks5"); err == nil {
-		dialer, err := proxy.SOCKS5("tcp", str, nil, proxy.Direct)
-		if err == nil {
-			return &http.Transport{Dial: dialer.Dial}
-		}
-		util.Log.Printf("error socks5 proxy:%s", err)
-	}
-	if str, err := utilgo.GetParam("--proxy"); err == nil {
-		urli := url.URL{}
-		urlproxy, err := urli.Parse(str)
-		if err == nil {
-			return &http.Transport{
-				Proxy: http.ProxyURL(urlproxy),
-			}
-		}
-		util.Log.Printf("error http(s) proxy:%s", err)
-	}
-	return nil
 }

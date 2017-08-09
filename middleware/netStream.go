@@ -6,9 +6,8 @@ import (
 	"netdisk/layers/baidudisk"
 	"regexp"
 
-	"github.com/suconghou/utilgo"
-
 	"github.com/suconghou/fastload/fastload"
+	"github.com/suconghou/utilgo"
 )
 
 type routeInfo struct {
@@ -45,19 +44,19 @@ func NetStreamAPI(w http.ResponseWriter, r *http.Request, match []string) {
 func ls(w http.ResponseWriter, r *http.Request, match []string) {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).APILsURL(file)
-	fastload.Pipe(w, r, url, filter)
+	fastload.Pipe(w, r, url, filter, 30, nil)
 }
 
 func info(w http.ResponseWriter, r *http.Request, match []string) {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).APIFileInfoURL(file)
-	fastload.Pipe(w, r, url, filter)
+	fastload.Pipe(w, r, url, filter, 30, nil)
 }
 
 func get(w http.ResponseWriter, r *http.Request, match []string) {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(file)
-	fastload.Pipe(w, r, url, filter)
+	fastload.Pipe(w, r, url, filter, 3600, nil)
 }
 
 func fallback(w http.ResponseWriter, r *http.Request, match []string) {
