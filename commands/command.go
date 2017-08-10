@@ -267,16 +267,20 @@ func Config() {
 
 // Task list current backend task
 func Task() {
+	var err error
 	if (len(os.Args) == 2) || (os.Args[2] == "list") {
-		fslayer.GetTaskList()
+		err = fslayer.GetTaskList()
 	} else if len(os.Args) == 5 && os.Args[2] == "add" {
-		fslayer.AddTask((os.Args[3]), os.Args[4])
+		err = fslayer.AddTask((os.Args[3]), os.Args[4])
 	} else if len(os.Args) == 4 && os.Args[2] == "remove" {
-		fslayer.RemoveTask(os.Args[3])
+		err = fslayer.RemoveTask(os.Args[3])
 	} else if len(os.Args) == 4 && os.Args[2] == "info" {
-		fslayer.GetTaskInfo(os.Args[3])
+		err = fslayer.GetTaskInfo(os.Args[3])
 	} else {
 		util.Log.Print("Usage:disk task list/add/info/remove")
+	}
+	if err != nil {
+		util.Log.Print(err)
 	}
 }
 

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strconv"
+	"time"
 
 	"github.com/bitly/go-simplejson"
 	"github.com/suconghou/utilgo"
@@ -90,19 +92,24 @@ func (bc *Bclient) APILs(p string) (*simplejson.Json, error) {
 }
 
 // Cd show files list
-func (bc *Bclient) Cd() {
-
-}
-
-// APICd return resp cd
-func (bc *Bclient) APICd(p string) (*simplejson.Json, error) {
+func (bc *Bclient) Cd(p string) error {
 	bc.path = p
-	return bc.APILs(p)
+	return bc.Ls(p)
 }
 
 // Mkdir mkdir a dir
-func (bc *Bclient) Mkdir(p string) {
-
+func (bc *Bclient) Mkdir(p string) error {
+	js, err := bc.APIMkdir(p)
+	if err != nil {
+		return err
+	}
+	errMsg := js.Get("error_msg").MustString()
+	if errMsg != "" {
+		return fmt.Errorf(errMsg)
+	}
+	fmt.Println(name + bc.root)
+	fmt.Println(" 已创建 " + p)
+	return nil
 }
 
 // APIMkdirURL return mkdir api url
@@ -394,17 +401,32 @@ func (bc *Bclient) APISearch(name string) (*simplejson.Json, error) {
 }
 
 // TaskAdd add task
-func (bc *Bclient) TaskAdd() {
-
+func (bc *Bclient) TaskAdd(savePath string, url string) error {
+	js, err := bc.APITaskAdd(savePath, url)
+	if err != nil {
+		return err
+	}
+	errMsg := js.Get("error_msg").MustString()
+	if errMsg != "" {
+		return fmt.Errorf(errMsg)
+	}
+	id := js.Get("task_id").MustInt()
+	fmt.Printf("任务ID %d\n", id)
+	if js.Get("rapid_download").MustInt() == 1 {
+		fmt.Println("离线已秒杀")
+		bc.TaskInfo(strconv.Itoa(id))
+	}
+	return nil
 }
 
 // APITaskAddURL retrun taskadd url
 func (bc *Bclient) APITaskAddURL(savePath string, sourceURL string) string {
-	return fmt.Sprintf("%s?method=%s&access_token=%s&save_path=%s/&source_url=%s&app_id=250528", bc.taskURL, "add_task", bc.token, savePath, sourceURL)
+	return fmt.Sprintf("%s?method=%s&access_token=%s&save_path=%s&source_url=%s&app_id=250528", bc.taskURL, "add_task", bc.token, savePath, sourceURL)
 }
 
 // APITaskAdd return taskadd resp
 func (bc *Bclient) APITaskAdd(savePath string, sourceURL string) (*simplejson.Json, error) {
+	savePath = path.Join(bc.root, savePath)
 	body, err := httpPost(bc.APITaskAddURL(savePath, sourceURL), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
@@ -413,8 +435,25 @@ func (bc *Bclient) APITaskAdd(savePath string, sourceURL string) (*simplejson.Js
 }
 
 // TaskList get tasklist
-func (bc *Bclient) TaskList() {
-
+func (bc *Bclient) TaskList() error {
+	js, err := bc.APITaskList()
+	if err != nil {
+		return err
+	}
+	b := bytes.Buffer{}
+	for i := range js.Get("task_info").MustArray() {
+		item := js.Get("task_info").GetIndex(i)
+		id := item.Get("task_id").MustString()
+		name := item.Get("task_name").MustString()
+		t, _ := strconv.ParseInt(item.Get("create_time").MustString(), 10, 64)
+		createTime := utilgo.DateFormat(t)
+		status := showTaskStatus(item.Get("status").MustString())
+		sourceURL := item.Get("source_url").MustString()
+		savePath := item.Get("save_path").MustString()
+		b.WriteString(fmt.Sprintf("\n任务ID:%s\n任务名称:%s\n创建时间:%s\n任务状态:%s\n源地址:%s \n存储至:%s\n", id, name, createTime, status, sourceURL, savePath))
+	}
+	fmt.Printf("%s%s  ➜  离线任务: %d个任务 %s", name, bc.root, js.Get("total").MustInt(), b.String())
+	return nil
 }
 
 // APITaskListURL return tasklist url
@@ -432,8 +471,43 @@ func (bc *Bclient) APITaskList() (*simplejson.Json, error) {
 }
 
 // TaskInfo get taskinfo
-func (bc *Bclient) TaskInfo() {
-
+func (bc *Bclient) TaskInfo(ids string) error {
+	js, err := bc.APITaskInfo(ids)
+	if err != nil {
+		return err
+	}
+	errMsg := js.Get("error_msg").MustString()
+	if errMsg != "" {
+		return fmt.Errorf(errMsg)
+	}
+	b := bytes.Buffer{}
+	timestamp := time.Now().Unix()
+	for id := range js.Get("task_info").MustMap() {
+		item := js.Get("task_info").Get(id)
+		name := item.Get("task_name").MustString()
+		status := showTaskStatus(item.Get("status").MustString())
+		createTime, _ := strconv.ParseInt(item.Get("create_time").MustString(), 10, 64)
+		startTime, _ := strconv.ParseInt(item.Get("create_time").MustString(), 10, 64)
+		b.WriteString(fmt.Sprintf("\n任务ID:%s\n任务名称:%s\n任务状态:%s\n创建时间:%s\n开始下载时间:%s\n", id, name, status, utilgo.DateFormat(createTime), utilgo.DateFormat(startTime)))
+		fileSize, _ := strconv.ParseUint(item.Get("file_size").MustString(), 10, 64)
+		finishTime, _ := strconv.ParseInt(item.Get("finish_time").MustString(), 10, 64)
+		if fileSize > 0 { //已探测出文件大小
+			b.WriteString(fmt.Sprintf("大小:%s\n", utilgo.ByteFormat(fileSize)))
+			if finishTime > startTime { //已下载完毕
+				duration := finishTime - startTime
+				b.WriteString(fmt.Sprintf("任务完成时间:%s 耗时:%d秒 速度:%.2fKB/s \n", utilgo.DateFormat(finishTime), duration, float64(fileSize)/1024/float64(duration)))
+			} else if finishTime == startTime {
+				b.WriteString(fmt.Sprintf("任务完成时间:%s 云端已秒杀 \n", utilgo.DateFormat(finishTime)))
+			} else {
+				finishedSize, _ := strconv.ParseUint(item.Get("finished_size").MustString(), 10, 64)
+				duration := int64(timestamp) - startTime
+				b.WriteString(fmt.Sprintf("已下载:%s 进度:%.1f%% 速度:%.2fKB/s\n", utilgo.ByteFormat(finishedSize), float64(finishedSize)/float64(fileSize)*100, float64(finishedSize)/1024/float64(duration)))
+			}
+		}
+		b.WriteString(fmt.Sprintf("原地址:%s\n存储至:%s\n", item.Get("source_url").MustString(), item.Get("save_path").MustString()))
+	}
+	fmt.Printf("%s%s  ➜  任务详情: %s", name, bc.root, b.String())
+	return nil
 }
 
 // APITaskInfoURL return taskinfo url
@@ -451,8 +525,17 @@ func (bc *Bclient) APITaskInfo(ids string) (*simplejson.Json, error) {
 }
 
 // TaskRemove remove task
-func (bc *Bclient) TaskRemove() {
-
+func (bc *Bclient) TaskRemove(id string) error {
+	js, err := bc.APITaskRemove(id)
+	if err != nil {
+		return err
+	}
+	errMsg := js.Get("error_msg").MustString()
+	if errMsg != "" {
+		return fmt.Errorf(errMsg)
+	}
+	fmt.Printf("已取消任务%s\n", id)
+	return nil
 }
 
 // APITaskRemoveURL return taskremove url
@@ -470,8 +553,17 @@ func (bc *Bclient) APITaskRemove(id string) (*simplejson.Json, error) {
 }
 
 // Clear empty recycle
-func (bc *Bclient) Clear() {
-
+func (bc *Bclient) Clear() error {
+	js, err := bc.APIClear()
+	if err != nil {
+		return err
+	}
+	errMsg := js.Get("error_msg").MustString()
+	if errMsg != "" {
+		return fmt.Errorf(errMsg)
+	}
+	fmt.Println("已清空回收站 " + strconv.Itoa(js.GetPath("extra.succnum").MustInt()) + "个项目被清除")
+	return nil
 }
 
 // APIClearURL return clear url

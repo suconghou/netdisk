@@ -15,6 +15,7 @@ import (
 	"github.com/suconghou/utilgo"
 )
 
+// Pwd print current path
 func Pwd() error {
 	if config.IsPcs() {
 		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Pwd(config.Cfg.Pcs.Path)
@@ -22,6 +23,7 @@ func Pwd() error {
 	return nil
 }
 
+// GetInfo current backend info
 func GetInfo() error {
 	if config.IsPcs() {
 		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Info()
@@ -29,6 +31,7 @@ func GetInfo() error {
 	return nil
 }
 
+// ListDir list files and dirs
 func ListDir(filePath string, keep bool) error {
 	if config.IsPcs() {
 		if filePath == "" {
@@ -172,18 +175,25 @@ func GetFileInfo(filePath string, dlink bool) error {
 	return nil
 }
 
+// PutFile upload files to backend
 func PutFile(filePath string, savePath string, fileSize uint64, ondup string) {
 
 }
 
+// PutFileRapid upload file
 func PutFileRapid(filePath string, savePath string, fileSize uint64, ondup string, md5Str string) {
 
 }
 
+// Mkdir create dir
 func Mkdir(path string) error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Mkdir(path)
+	}
 	return nil
 }
 
+// DeleteFile delete files
 func DeleteFile(fileName string) error {
 	if config.IsPcs() {
 		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Rm(fileName)
@@ -191,6 +201,7 @@ func DeleteFile(fileName string) error {
 	return nil
 }
 
+// MoveFile move file
 func MoveFile(source string, target string) error {
 	if config.IsPcs() {
 		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Mv(source, target)
@@ -198,6 +209,7 @@ func MoveFile(source string, target string) error {
 	return nil
 }
 
+// CopyFile copy files
 func CopyFile(source string, target string) error {
 	if config.IsPcs() {
 		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Cp(source, target)
@@ -205,6 +217,7 @@ func CopyFile(source string, target string) error {
 	return nil
 }
 
+// SearchFile search files
 func SearchFile(fileName string) error {
 	if config.IsPcs() {
 		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Search(fileName)
@@ -212,21 +225,42 @@ func SearchFile(fileName string) error {
 	return nil
 }
 
-func Empty() {
+// Empty clear
+func Empty() error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Clear()
+	}
+	return nil
 }
 
-func GetTaskList() {
-
+// GetTaskList print task list
+func GetTaskList() error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).TaskList()
+	}
+	return nil
 }
 
-func AddTask(savePath string, sourceUrl string) {
-
+// AddTask add a task
+func AddTask(savePath string, sourceURL string) error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).TaskAdd(savePath, sourceURL)
+	}
+	return nil
 }
 
-func RemoveTask(id string) {
-
+// RemoveTask remove a task
+func RemoveTask(id string) error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).TaskRemove(id)
+	}
+	return nil
 }
 
-func GetTaskInfo(ids string) {
-
+// GetTaskInfo print one task info
+func GetTaskInfo(ids string) error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).TaskInfo(ids)
+	}
+	return nil
 }

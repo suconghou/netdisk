@@ -115,8 +115,7 @@ func daemon() error {
 	}
 	http.HandleFunc("/status", status)
 	http.HandleFunc("/", routeMatch)
-	util.Log.Printf("Starting up on port %d", port)
-	util.Log.Printf("Document root %s", pwd)
+	util.Log.Printf("Starting up on port %d\nDocument root %s", port, pwd)
 	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
 

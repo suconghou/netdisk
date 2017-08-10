@@ -22,20 +22,7 @@ var Log = log.New(os.Stdout, "", 0)
 // Debug log to stderr
 var Debug = log.New(os.Stderr, "", log.Lshortfile|log.LstdFlags)
 
-func DiskName(code string) string {
-
-	unit := map[string]string{
-		"pcs":     "百度网盘",
-		"dropbox": "DROPBOX",
-	}
-	if v, ok := unit[code]; ok {
-		return v
-	} else {
-		return "Unknow"
-	}
-
-}
-
+// GetCrc32AndMd5 ...
 func GetCrc32AndMd5(filePath string) (string, string) {
 	file, err := os.Open(filePath)
 	if err != nil {
