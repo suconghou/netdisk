@@ -73,7 +73,7 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 		start = cstart
 	}
 	loader := fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(file.Name())+" ", " ", nil, nil), proxy, nil)
-	resp, total, filesize, thread, err := loader.Load(start, end, nil)
+	body, _, total, filesize, thread, err := loader.Load(start, end, nil)
 	if err != nil {
 		if err == io.EOF {
 			return fmt.Errorf("该文件已经下载完毕")
@@ -90,7 +90,7 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 		showsizestr = fmt.Sprintf(",大小%s/%s(%d/%d)", utilgo.ByteFormat(uint64(total)), utilgo.ByteFormat(uint64(filesize)), total, filesize)
 	}
 	util.Log.Printf("下载中,线程%d%s%s%s", thread, thunkstr, showsizestr, startstr)
-	n, err := io.Copy(file, resp)
+	n, err := io.Copy(file, body)
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(saveas)+" ", " ", hook, nil), proxy, nil)
 	}
 	defer file.Close()
-	resp, total, filesize, thread, err := loader.Load(start, end, nil)
+	body, _, total, filesize, thread, err := loader.Load(start, end, nil)
 	if err != nil {
 		if err == io.EOF {
 			return fmt.Errorf("该文件已经下载完毕")
@@ -159,7 +159,7 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 		showsizestr = fmt.Sprintf(",大小%s/%s(%d/%d)", utilgo.ByteFormat(uint64(total)), utilgo.ByteFormat(uint64(filesize)), total, filesize)
 	}
 	util.Log.Printf("下载中,线程%d%s%s%s", thread, thunkstr, showsizestr, startstr)
-	n, err := io.Copy(file, resp)
+	n, err := io.Copy(file, body)
 	if err != nil {
 		return err
 	}
