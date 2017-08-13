@@ -14,18 +14,9 @@ type routeInfo struct {
 
 // RoutePath defines all routes
 var RoutePath = []routeInfo{
-	{regexp.MustCompile(`^/files/(.+)$`), files},
-	{regexp.MustCompile(`^/imgs/(.+)$`), imgs},
-	{regexp.MustCompile(`^/api/media/(.+)$`), middleware.MediaStreamAPI},
-	{regexp.MustCompile(`^/media/(.+)$`), middleware.MediaStream},
+	{regexp.MustCompile(`^/files/(.+)$`), middleware.Files},
+	{regexp.MustCompile(`^/imgs/(.+)$`), middleware.Imgs},
+	{regexp.MustCompile(`^/play/(.+)$`), middleware.MediaStreamAPI},
 	{regexp.MustCompile(`^/net/(.+)$`), middleware.NetStreamAPI},
 	{regexp.MustCompile(`^/(?:(https?):/?)?(?:\w+\.)+\w+(?::\d+)?/.*$`), middleware.Pipe},
-}
-
-func files(w http.ResponseWriter, r *http.Request, match []string) {
-
-}
-
-func imgs(w http.ResponseWriter, r *http.Request, match []string) {
-
 }

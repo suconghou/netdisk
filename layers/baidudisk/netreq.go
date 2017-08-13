@@ -8,17 +8,17 @@ import (
 )
 
 func httpGetResp(url string) (*http.Response, error) {
-	response, err := http.Get(url)
-	return response, err
+	resp, err := http.Get(url)
+	return resp, err
 }
 
 func httpGet(url string) ([]byte, error) {
-	response, err := http.Get(url)
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return body, err
 	}
@@ -26,12 +26,12 @@ func httpGet(url string) ([]byte, error) {
 }
 
 func httpPost(url string, contentType string, body io.Reader) ([]byte, error) {
-	response, err := http.Post(url, contentType, body)
+	resp, err := http.Post(url, contentType, body)
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
-	bodyStr, err := ioutil.ReadAll(response.Body)
+	defer resp.Body.Close()
+	bodyStr, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return bodyStr, err
 	}

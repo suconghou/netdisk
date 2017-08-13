@@ -27,9 +27,9 @@ var sysStatus struct {
 	Uptime       string
 	GoVersion    string
 	Hostname     string
-	MemAllocated uint64
-	MemTotal     uint64
-	MemSys       uint64
+	MemAllocated uint64 // bytes allocated and still in use
+	MemTotal     uint64 // bytes allocated (even if freed)
+	MemSys       uint64 // bytes obtained from system
 	NumGoroutine int
 	CPUNum       int
 	Pid          int
@@ -124,9 +124,9 @@ func status(w http.ResponseWriter, r *http.Request) {
 	runtime.ReadMemStats(memStat)
 	sysStatus.Uptime = time.Since(startTime).String()
 	sysStatus.NumGoroutine = runtime.NumGoroutine()
-	sysStatus.MemAllocated = memStat.Alloc
-	sysStatus.MemTotal = memStat.TotalAlloc
-	sysStatus.MemSys = memStat.Sys
+	sysStatus.MemAllocated = memStat.Alloc / 1024  // 当前内存使用量
+	sysStatus.MemTotal = memStat.TotalAlloc / 1024 // 所有被分配的内存
+	sysStatus.MemSys = memStat.Sys / 1024          // 内存占用量
 	sysStatus.CPUNum = runtime.NumCPU()
 	sysStatus.GoVersion = runtime.Version()
 	sysStatus.Hostname, _ = os.Hostname()
