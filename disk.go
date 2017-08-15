@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"netdisk/commands"
+	"netdisk/middleware"
 	"netdisk/route"
 	"netdisk/util"
 	"os"
@@ -158,7 +159,11 @@ func fallback(w http.ResponseWriter, r *http.Request) {
 		files = []string{r.URL.Path, path.Join(r.URL.Path, "index.html")}
 	}
 	if !tryFiles(files, w, r) {
-		http.NotFound(w, r)
+		if utilgo.IsURL(r.RequestURI) {
+			middleware.Proxy(w, r)
+		} else {
+			http.NotFound(w, r)
+		}
 	}
 }
 

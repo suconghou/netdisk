@@ -322,7 +322,7 @@ func Serve() {
 	}
 }
 
-// Proxy enable a http_proxy server or socks5 server
+// Proxy enable a socks proxy server
 func Proxy() {
 	var (
 		port        int
@@ -339,7 +339,7 @@ func Proxy() {
 				client, err := l.Accept()
 				if err == nil {
 					go func() {
-						err := middleware.Proxy(client)
+						err := middleware.ProxySocks(client)
 						if err != nil {
 							util.Log.Print(err)
 						}
