@@ -104,13 +104,32 @@ disk wget file/url --thin // set to 256K
 `--ua "user agent string"`
 
 
+`disk reverse` is a reverse proxy server like nginx but can work with upstream proxy
+
 `--socks` use socks5 
 
 `--proxy` use http/https proxy  
 
-`--socks 127.0.0.1:1080`
+`-u https://backend --proxy http://your_http_proxy:6056` 
+( or https://your_http_proxy:6056 , it doesn't matter)
 
--u https://backend --proxy http://your_http_proxy:6056 
+backend is your proxy backend server (can be any url http/https or with uri)
+
+proxy is your http_proxy https_proxy or
+
+socks proxy `--socks 127.0.0.1:1080`
+
+> if your proxy is only http_proxy proxy then you can only proxy http backend (no https backend) 
+
+
+`disk proxy` give you a http_proxy https_proxy 
+
+socks to http/https/socks
+
+`-p` is the listen port
+
+`--socks` is a upstream socks5 proxy  eg `x.x.x.x:6056`
+
 
 ### other flag
 

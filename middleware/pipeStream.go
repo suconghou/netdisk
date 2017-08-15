@@ -1,11 +1,16 @@
 package middleware
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"netdisk/util"
 	"strings"
+
+	"golang.org/x/net/proxy"
 
 	"github.com/suconghou/fastload/fastload"
 )
@@ -32,7 +37,53 @@ func Proxy(w http.ResponseWriter, r *http.Request) (int64, error) {
 	return fastload.Pipe(w, r, r.RequestURI, usecachefilter, 3600, nil)
 }
 
-// ProxySocks is a socks proxy server
-func ProxySocks(c net.Conn) error {
+// ProxySocks is a http_proxy https_proxy socks proxy server
+func ProxySocks(client net.Conn, dialer proxy.Dialer) error {
+	var b [1024]byte
+	n, err := client.Read(b[:])
+	if err != nil {
+		return err
+	}
+	if b[0] == 5 { // socks5
+		fmt.Println("socks5")
+		return nil
+	}
+	// try https_proxy and http_proxy
+	var method, host, address string
+	fmt.Sscanf(string(b[:bytes.IndexByte(b[:], '\n')]), "%s%s", &method, &host)
+	hostPortURL, err := url.Parse(host)
+	if err != nil {
+		return err
+	}
+	if method == "CONNECT" { // https_proxy
+		_, err = client.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+		if err != nil {
+			return err
+		}
+		address = fmt.Sprintf("%s", hostPortURL)
+	} else { // at last parse as http_proxy
+		address = hostPortURL.Host
+		if strings.Index(address, ":") == -1 {
+			address = address + ":80"
+		}
+	}
+	server, err := dialer.Dial("tcp", address)
+	if err != nil {
+		return err
+	}
+	if method != "CONNECT" {
+		_, err = server.Write(b[:n])
+		if err != nil {
+			return err
+		}
+	}
+	p1die := make(chan struct{})
+	go func() { io.Copy(server, client); close(p1die) }()
+	p2die := make(chan struct{})
+	go func() { io.Copy(client, server); close(p2die) }()
+	select {
+	case <-p1die:
+	case <-p2die:
+	}
 	return nil
 }

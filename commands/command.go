@@ -2,6 +2,7 @@ package commands
 
 import (
 	"flag"
+	"io"
 	"net"
 	"net/http"
 	"netdisk/config"
@@ -13,6 +14,8 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"golang.org/x/net/proxy"
 
 	"github.com/suconghou/utilgo"
 )
@@ -326,21 +329,36 @@ func Serve() {
 func Proxy() {
 	var (
 		port        int
+		socks       string
 		ferr        flag.ErrorHandling
+		l           net.Listener
 		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
+		dialer      = proxy.FromEnvironment()
+		d           proxy.Dialer
 	)
 	CommandLine.IntVar(&port, "p", 8123, "listen port")
+	CommandLine.StringVar(&socks, "socks", "", "socks proxy")
 	err := CommandLine.Parse(os.Args[2:])
 	if err == nil {
+		if socks != "" {
+			d, err = proxy.SOCKS5("tcp", socks, nil, proxy.Direct)
+			if err == nil {
+				dialer = d
+			}
+		}
+		if err != nil {
+			util.Log.Print(err)
+			return
+		}
 		util.Log.Printf("Starting up on port %d", port)
-		l, err := net.Listen("tcp", ":"+strconv.Itoa(port))
+		l, err = net.Listen("tcp", ":"+strconv.Itoa(port))
 		if err == nil {
 			for {
 				client, err := l.Accept()
 				if err == nil {
 					go func() {
-						err := middleware.ProxySocks(client)
-						if err != nil {
+						err := middleware.ProxySocks(client, dialer)
+						if err != nil && err != io.EOF {
 							util.Log.Print(err)
 						}
 					}()
