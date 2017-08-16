@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"netdisk/util"
+	"strconv"
 	"strings"
 
 	"github.com/suconghou/fastload/fastload"
@@ -44,7 +45,35 @@ func ProxySocks(client net.Conn, dialer proxy.Dialer) error {
 		return err
 	}
 	if b[0] == 5 { // socks5
-		fmt.Println("socks5")
+		client.Write([]byte{0x05, 0x00})
+		n, err = client.Read(b[:])
+		if err != nil {
+			return err
+		}
+		var host, port string
+		switch b[3] {
+		case 0x01: //IP V4
+			host = net.IPv4(b[4], b[5], b[6], b[7]).String()
+		case 0x03: //域名
+			host = string(b[5 : n-2]) //b[4]表示域名的长度
+		case 0x04: //IP V6
+			host = net.IP{b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15], b[16], b[17], b[18], b[19]}.String()
+		}
+		port = strconv.Itoa(int(b[n-2])<<8 | int(b[n-1]))
+		server, err := dialer.Dial("tcp", net.JoinHostPort(host, port))
+		if err != nil {
+			return err
+		}
+		client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) //响应客户端连接成功
+		//进行转发
+		p1die := make(chan struct{})
+		go func() { io.Copy(server, client); close(p1die) }()
+		p2die := make(chan struct{})
+		go func() { io.Copy(client, server); close(p2die) }()
+		select {
+		case <-p1die:
+		case <-p2die:
+		}
 		return nil
 	}
 	// try https_proxy and http_proxy

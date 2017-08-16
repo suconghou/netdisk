@@ -357,6 +357,11 @@ func Proxy() {
 				client, err := l.Accept()
 				if err == nil {
 					go func() {
+						defer func() {
+							if err := recover(); err != nil {
+								util.Log.Print(err)
+							}
+						}()
 						err := middleware.ProxySocks(client, dialer)
 						if err != nil && err != io.EOF {
 							util.Log.Print(err)
