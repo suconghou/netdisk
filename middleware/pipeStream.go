@@ -10,9 +10,8 @@ import (
 	"netdisk/util"
 	"strings"
 
-	"golang.org/x/net/proxy"
-
 	"github.com/suconghou/fastload/fastload"
+	"golang.org/x/net/proxy"
 )
 
 // Pipe response stream
@@ -33,8 +32,8 @@ func Pipe(w http.ResponseWriter, r *http.Request, match []string) {
 }
 
 // Proxy is a http_proxy and just http_proxy server
-func Proxy(w http.ResponseWriter, r *http.Request) (int64, error) {
-	return fastload.Pipe(w, r, r.RequestURI, usecachefilter, 3600, nil)
+func Proxy(w http.ResponseWriter, r *http.Request) error {
+	return fastload.HTTPProxy(w, r)
 }
 
 // ProxySocks is a http_proxy https_proxy socks proxy server

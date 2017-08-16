@@ -29,7 +29,7 @@ func youtubeVideo(w http.ResponseWriter, r *http.Request, match []string) {
 	if ext == "json" {
 		bs, err := youtubeVideoParser.GetYoutubeVideoInfo(id)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("%s", err), 500)
+			http.Error(w, err.Error(), 500)
 			return
 		}
 		utilgo.JSONPut(w, bs, true, 86400)
@@ -37,7 +37,7 @@ func youtubeVideo(w http.ResponseWriter, r *http.Request, match []string) {
 		if url, err := youtubeVideoParser.GetYoutubeVideoURL(id, ext, quality); err == nil {
 			fastload.Pipe(w, r, url, usecachefilter, 30, nil)
 		} else {
-			http.Error(w, fmt.Sprintf("%s", err), 500)
+			http.Error(w, err.Error(), 500)
 		}
 	}
 }
@@ -46,7 +46,7 @@ func youtubeVideoItag(w http.ResponseWriter, r *http.Request, match []string) {
 	id, itag := match[1], match[2]
 	info, err := youtubeVideoParser.Parse(id)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("%s", err), 500)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	if v, ok := info.Streams[itag]; ok {

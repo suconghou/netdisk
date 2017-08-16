@@ -51,7 +51,7 @@ func Cd() {
 		dir = os.Args[2]
 		err := fslayer.ListDir(dir, true)
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
 		}
 	} else {
 		util.Log.Print("Usage:disk cd newpath")
@@ -62,7 +62,7 @@ func Cd() {
 func Pwd() {
 	err := fslayer.Pwd()
 	if err != nil {
-		util.Log.Printf("%v", err)
+		util.Log.Print(err)
 	}
 }
 
@@ -71,7 +71,7 @@ func Mv() {
 	if len(os.Args) == 4 {
 		err := fslayer.MoveFile(os.Args[2], os.Args[3])
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
 		}
 	} else {
 		util.Log.Print("Usage:disk mv path newpath")
@@ -83,7 +83,7 @@ func Cp() {
 	if len(os.Args) == 4 {
 		err := fslayer.CopyFile(os.Args[2], os.Args[3])
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
 		}
 	} else {
 		util.Log.Print("Usage:disk cp path newpath")
@@ -95,7 +95,7 @@ func Mkdir() {
 	if len(os.Args) == 3 {
 		err := fslayer.Mkdir(os.Args[2])
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
 		}
 	} else {
 		util.Log.Print("Usage:disk mkdir path")
@@ -107,7 +107,7 @@ func Rm() {
 	if len(os.Args) == 3 {
 		err := fslayer.DeleteFile(os.Args[2])
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
 		}
 	} else {
 		util.Log.Print("Usage:disk rm filepath")
@@ -121,12 +121,12 @@ func Get() {
 		thread, thunk, start, end := netlayer.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
 		saveas, err := utilgo.GetStorePath(os.Args[2])
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
 			return
 		}
 		err = fslayer.Get(os.Args[2], saveas, reqHeader, thread, thunk, start, end)
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
 		}
 	} else {
 		util.Log.Print("Usage:disk get filepath")
@@ -196,12 +196,12 @@ func Play() {
 			}
 			err = fslayer.PlayURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, stdout, transport)
 			if err != nil {
-				util.Log.Printf("%v", err)
+				util.Log.Print(err)
 			}
 		} else {
 			err = fslayer.Play(os.Args[2], saveas, reqHeader, thread, thunk, start, end, stdout)
 			if err != nil {
-				util.Log.Printf("%v", err)
+				util.Log.Print(err)
 			}
 		}
 	} else {
@@ -219,12 +219,12 @@ func Info() {
 	if len(os.Args) >= 3 {
 		err := fslayer.GetFileInfo(os.Args[2], utilgo.HasFlag("--link"))
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
 		}
 	} else {
 		err := fslayer.GetInfo()
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
 		}
 	}
 }
@@ -292,7 +292,7 @@ func Search() {
 	if len(os.Args) == 3 {
 		err := fslayer.SearchFile(os.Args[2])
 		if err != nil {
-			util.Log.Printf("%v", err)
+			util.Log.Print(err)
 		}
 	}
 }

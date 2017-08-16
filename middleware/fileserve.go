@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -75,7 +74,7 @@ func Files(w http.ResponseWriter, r *http.Request, match []string) {
 		return nil
 	}()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("%s", err), 500)
+		http.Error(w, err.Error(), 500)
 	}
 }
 

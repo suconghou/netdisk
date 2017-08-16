@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"net/http"
 	"netdisk/commands"
@@ -13,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/suconghou/utilgo"
@@ -20,8 +20,8 @@ import (
 
 var (
 	startTime = time.Now()
-	port      int
-	doc       string
+	port      = 6060
+	doc       = "./"
 )
 
 var sysStatus struct {
@@ -107,9 +107,18 @@ func cli() {
 }
 
 func daemon() error {
-	flag.IntVar(&port, "p", 6060, "give me a port number")
-	flag.StringVar(&doc, "d", "./", "document root dir")
-	flag.Parse()
+	d := os.Getenv("DOC")
+	if d != "" {
+		doc = d
+	}
+	p := os.Getenv("PORT")
+	if p != "" {
+		po, err := strconv.Atoi(p)
+		if err != nil {
+			return err
+		}
+		port = po
+	}
 	pwd, err := utilgo.PathMustHave(doc)
 	if err != nil {
 		return err
@@ -133,7 +142,7 @@ func status(w http.ResponseWriter, r *http.Request) {
 	sysStatus.Hostname, _ = os.Hostname()
 	sysStatus.Pid = os.Getpid()
 	if bs, err := json.Marshal(&sysStatus); err != nil {
-		http.Error(w, fmt.Sprintf("%s", err), 500)
+		http.Error(w, err.Error(), 500)
 	} else {
 		utilgo.JSONPut(w, bs, true, 60)
 	}
