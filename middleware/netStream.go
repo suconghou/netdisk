@@ -24,17 +24,17 @@ func NetStreamAPI(w http.ResponseWriter, r *http.Request, match []string) {
 func ls(w http.ResponseWriter, r *http.Request, match []string) {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).APILsURL(file)
-	fastload.Pipe(w, r, url, usecachefilter, 30, nil)
+	fastload.Pipe(w, cleanHeader(r, xheaders), url, usecachefilter, 30, nil)
 }
 
 func info(w http.ResponseWriter, r *http.Request, match []string) {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).APIFileInfoURL(file)
-	fastload.Pipe(w, r, url, usecachefilter, 30, nil)
+	fastload.Pipe(w, cleanHeader(r, xheaders), url, usecachefilter, 30, nil)
 }
 
 func get(w http.ResponseWriter, r *http.Request, match []string) {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(file)
-	fastload.Pipe(w, r, url, usecachefilter, 3600, nil)
+	fastload.Pipe(w, cleanHeader(r, xheaders), url, usecachefilter, 3600, nil)
 }
