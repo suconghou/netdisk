@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -193,12 +192,12 @@ func tryFiles(files []string, w http.ResponseWriter, r *http.Request) bool {
 }
 
 func configs(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("auth") == fmt.Sprintf("%x", md5.Sum([]byte(os.Getenv("AUTH")))) {
-		token := r.Header.Get("token")
+	if r.Header.Get("Auth") == os.Getenv("AUTH") {
+		token := r.Header.Get("Token")
 		if r.Method == "GET" {
 			h := w.Header()
 			if token != "" {
-				h.Add("token", config.Cfg.Pcs.Token)
+				h.Add("Token", config.Cfg.Pcs.Token)
 			}
 		} else if r.Method == "POST" {
 			if token != "" {
