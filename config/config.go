@@ -64,11 +64,14 @@ func IsPcs() bool {
 	return false
 }
 
+// Use change backend driver
 func Use(driver string) error {
+	Cfg.Driver = driver
 	Cfg.Save()
 	return nil
 }
 
-func ConfigList() {
+// List print its config
+func List() {
 
 }

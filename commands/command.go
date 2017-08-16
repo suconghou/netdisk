@@ -258,7 +258,7 @@ func Help() {
 // Config set or get the app config
 func Config() {
 	if (len(os.Args) == 2) || (os.Args[2] == "list") {
-		config.ConfigList()
+		config.List()
 	} else if len(os.Args) == 3 && os.Args[2] == "get" {
 	} else if len(os.Args) == 4 && os.Args[2] == "set" {
 	} else if len(os.Args) == 4 && os.Args[2] == "setapp" {

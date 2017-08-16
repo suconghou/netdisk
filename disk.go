@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/suconghou/netdisk/commands"
+	"github.com/suconghou/netdisk/config"
 	"github.com/suconghou/netdisk/middleware"
 	"github.com/suconghou/netdisk/route"
 	"github.com/suconghou/netdisk/util"
@@ -124,6 +126,7 @@ func daemon() error {
 		return err
 	}
 	http.HandleFunc("/status", status)
+	http.HandleFunc("/config", configs)
 	http.HandleFunc("/", routeMatch)
 	util.Log.Printf("Starting up on port %d\nDocument root %s", port, pwd)
 	return http.ListenAndServe(fmt.Sprintf("%s:%d", os.Getenv("HOST"), port), nil)
@@ -187,4 +190,20 @@ func tryFiles(files []string, w http.ResponseWriter, r *http.Request) bool {
 		}
 	}
 	return false
+}
+
+func configs(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("auth") == fmt.Sprintf("%x", md5.Sum([]byte(os.Getenv("AUTH")))) {
+		token := r.Header.Get("token")
+		if r.Method == "GET" {
+			h := w.Header()
+			if token != "" {
+				h.Add("token", config.Cfg.Pcs.Token)
+			}
+		} else if r.Method == "POST" {
+			if token != "" {
+				config.Cfg.Pcs.Token = token
+			}
+		}
+	}
 }
