@@ -7,6 +7,17 @@ import (
 	"github.com/suconghou/utilgo"
 )
 
+var (
+	xheaders = []string{
+		"X-Forwarded-For",
+		"X-Forwarded-Host",
+		"X-Forwarded-Server",
+		"X-Forwarded-Port",
+		"X-Forwarded-Proto",
+		"X-Client-Ip",
+	}
+)
+
 type routeInfo struct {
 	Reg     *regexp.Regexp
 	Handler func(http.ResponseWriter, *http.Request, []string)
@@ -30,4 +41,11 @@ func dispatch(w http.ResponseWriter, r *http.Request, match []string, route []ro
 	if !found {
 		fallback(w, r, match)
 	}
+}
+
+func cleanHeader(r *http.Request, headers []string) *http.Request {
+	for _, k := range headers {
+		r.Header.Del(k)
+	}
+	return r
 }

@@ -26,7 +26,7 @@ func Pipe(w http.ResponseWriter, r *http.Request, match []string) {
 	if r.URL.RawQuery != "" {
 		url = url + "?" + r.URL.RawQuery
 	}
-	_, err := fastload.Pipe(w, r, url, usecachefilter, 3600, nil)
+	_, err := fastload.Pipe(w, cleanHeader(r, xheaders), url, usecachefilter, 3600, nil)
 	if err != nil {
 		util.Log.Printf("pipe %s error:%s", url, err)
 	}
