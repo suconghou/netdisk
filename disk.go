@@ -4,10 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"netdisk/commands"
-	"netdisk/middleware"
-	"netdisk/route"
-	"netdisk/util"
 	"os"
 	"path"
 	"path/filepath"
@@ -15,6 +11,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/suconghou/netdisk/commands"
+	"github.com/suconghou/netdisk/middleware"
+	"github.com/suconghou/netdisk/route"
+	"github.com/suconghou/netdisk/util"
 	"github.com/suconghou/utilgo"
 )
 
@@ -126,7 +126,7 @@ func daemon() error {
 	http.HandleFunc("/status", status)
 	http.HandleFunc("/", routeMatch)
 	util.Log.Printf("Starting up on port %d\nDocument root %s", port, pwd)
-	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	return http.ListenAndServe(fmt.Sprintf("%s:%d", os.Getenv("HOST"), port), nil)
 }
 
 func status(w http.ResponseWriter, r *http.Request) {

@@ -3,9 +3,9 @@ package tools
 import (
 	"fmt"
 	"net/http"
-	"netdisk/util"
 
 	"github.com/suconghou/fastload/fastload"
+	"github.com/suconghou/netdisk/util"
 )
 
 // HTTPProxy nginx like reverse proxy

@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/suconghou/utilgo"
-
 	"github.com/suconghou/fastload/fastload"
+	"github.com/suconghou/utilgo"
 	"github.com/suconghou/youtubeVideoParser"
 )
 

@@ -7,11 +7,11 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"netdisk/util"
 	"strconv"
 	"strings"
 
 	"github.com/suconghou/fastload/fastload"
+	"github.com/suconghou/netdisk/util"
 	"golang.org/x/net/proxy"
 )
 

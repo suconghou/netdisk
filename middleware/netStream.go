@@ -2,11 +2,11 @@ package middleware
 
 import (
 	"net/http"
-	"netdisk/config"
-	"netdisk/layers/baidudisk"
 	"regexp"
 
 	"github.com/suconghou/fastload/fastload"
+	"github.com/suconghou/netdisk/config"
+	"github.com/suconghou/netdisk/layers/baidudisk"
 )
 
 var netroute = []routeInfo{

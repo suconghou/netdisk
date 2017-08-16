@@ -5,19 +5,18 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"netdisk/config"
-	"netdisk/layers/fslayer"
-	"netdisk/layers/netlayer"
-	"netdisk/middleware"
-	"netdisk/tools"
-	"netdisk/util"
 	"os"
 	"path/filepath"
 	"strconv"
 
-	"golang.org/x/net/proxy"
-
+	"github.com/suconghou/netdisk/config"
+	"github.com/suconghou/netdisk/layers/fslayer"
+	"github.com/suconghou/netdisk/layers/netlayer"
+	"github.com/suconghou/netdisk/middleware"
+	"github.com/suconghou/netdisk/tools"
+	"github.com/suconghou/netdisk/util"
 	"github.com/suconghou/utilgo"
+	"golang.org/x/net/proxy"
 )
 
 // Use choose a backend

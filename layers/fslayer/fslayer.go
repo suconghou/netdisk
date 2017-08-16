@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"netdisk/config"
-	"netdisk/layers/baidudisk"
-	"netdisk/util"
+	"os"
 	"path"
 
-	"os"
-
 	"github.com/suconghou/fastload/fastload"
+	"github.com/suconghou/netdisk/config"
+	"github.com/suconghou/netdisk/layers/baidudisk"
+	"github.com/suconghou/netdisk/util"
 	"github.com/suconghou/utilgo"
 )
 
