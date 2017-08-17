@@ -67,10 +67,10 @@ func (bc *Bclient) Ls(p string) error {
 		size := item.Get("size").MustUint64()
 		total = total + size
 		b.WriteString("\n")
-		b.WriteString(utilgo.StringPadding(utilgo.DateFormat(item.Get("ctime").MustInt64()), 22))
-		b.WriteString(utilgo.StringPadding(utilgo.DateFormat(item.Get("mtime").MustInt64()), 22))
-		b.WriteString(utilgo.StringPadding(utilgo.ByteFormat(size), 10))
-		b.WriteString(utilgo.StringPadding(item.Get("path").MustString(), 20))
+		b.WriteString(fmt.Sprintf("%-22s", utilgo.DateFormat(item.Get("ctime").MustInt64())))
+		b.WriteString(fmt.Sprintf("%-22s", utilgo.DateFormat(item.Get("mtime").MustInt64())))
+		b.WriteString(fmt.Sprintf("%-10s", utilgo.ByteFormat(size)))
+		b.WriteString(fmt.Sprintf("%-20s", item.Get("path").MustString()))
 	}
 	fmt.Print(name + bc.root + "  ➜  " + p + " " + utilgo.ByteFormat(total))
 	fmt.Println(b.String())
@@ -376,10 +376,10 @@ func (bc *Bclient) Search(fileName string) error {
 		size := item.Get("size").MustUint64()
 		total = total + size
 		b.WriteString("\n")
-		b.WriteString(utilgo.StringPadding(utilgo.DateFormat(item.Get("ctime").MustInt64()), 22))
-		b.WriteString(utilgo.StringPadding(utilgo.DateFormat(item.Get("mtime").MustInt64()), 22))
-		b.WriteString(utilgo.StringPadding(utilgo.ByteFormat(size), 10))
-		b.WriteString(utilgo.StringPadding(item.Get("path").MustString(), 20))
+		b.WriteString(fmt.Sprintf("%-22s", utilgo.DateFormat(item.Get("ctime").MustInt64())))
+		b.WriteString(fmt.Sprintf("%-22s", utilgo.DateFormat(item.Get("mtime").MustInt64())))
+		b.WriteString(fmt.Sprintf("%-10s", utilgo.ByteFormat(size)))
+		b.WriteString(fmt.Sprintf("%-20s", item.Get("path").MustString()))
 	}
 	fmt.Print(name + bc.root + "  ➜  搜索[" + fileName + "] " + utilgo.ByteFormat(total))
 	fmt.Println(b.String())

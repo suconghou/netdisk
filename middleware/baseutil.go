@@ -24,7 +24,8 @@ type routeInfo struct {
 }
 
 var usecachefilter = func(out http.Header, res *http.Response) int {
-	utilgo.UseHTTPCache(out, 259200)
+	out.Del("Set-Cookie")
+	utilgo.UseHTTPCache(out, 604800)
 	return res.StatusCode
 }
 
