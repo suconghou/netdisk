@@ -36,5 +36,5 @@ func info(w http.ResponseWriter, r *http.Request, match []string) {
 func get(w http.ResponseWriter, r *http.Request, match []string) {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(file)
-	fastload.Pipe(w, cleanHeader(r, xheaders), url, usecachefilter, 3600, nil)
+	fastload.FastPipe(w, cleanHeader(r, xheaders), url, 4, 524288, nil, usecachefilter, nil)
 }
