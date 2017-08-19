@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/suconghou/fastload/fastload"
 	"github.com/suconghou/netdisk/config"
@@ -71,7 +71,7 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	if start == -1 {
 		start = cstart
 	}
-	loader := fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(file.Name())+" ", " ", nil, nil), proxy, nil)
+	loader := fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(filepath.Base(file.Name())+" ", " ", nil, nil), proxy, nil)
 	body, _, total, filesize, thread, err := loader.Load(start, end, nil)
 	if err != nil {
 		if err == io.EOF {
@@ -123,7 +123,7 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 			start = 0
 		}
 		file = os.Stdout
-		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(saveas)+" ", " ", nil, os.Stderr), proxy, nil)
+		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(filepath.Base(saveas)+" ", " ", nil, os.Stderr), proxy, nil)
 	} else {
 		file, cstart, err = utilgo.GetContinue(saveas)
 		if err != nil {
@@ -138,7 +138,7 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 				player = true
 			}
 		}
-		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(path.Base(saveas)+" ", " ", hook, nil), proxy, nil)
+		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(filepath.Base(saveas)+" ", " ", hook, nil), proxy, nil)
 	}
 	defer file.Close()
 	body, _, total, filesize, thread, err := loader.Load(start, end, nil)
