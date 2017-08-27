@@ -63,7 +63,7 @@ func Files(w http.ResponseWriter, r *http.Request, match []string) {
 			utilgo.JSONPut(w, bs, true, 3600)
 		} else {
 			h := w.Header()
-			utilgo.CrossShare(h)
+			utilgo.CrossShare(h, nil, "")
 			utilgo.UseHTTPCache(h, 86400)
 			h.Set("Content-Length", strconv.Itoa(int(file.Size())))
 			_, err := io.Copy(w, client.Open(filePath))
