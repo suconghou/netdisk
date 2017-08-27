@@ -26,6 +26,8 @@ type routeInfo struct {
 var usecachefilter = func(out http.Header, res *http.Response) int {
 	out.Del("Set-Cookie")
 	out.Del("Content-Disposition")
+	out.Set("Access-Control-Allow-Origin", "*")
+	out.Set("Access-Control-Allow-Headers", "Range, Origin, X-Requested-With, Content-Type, Content-Length, Accept, Accept-Encoding, Cache-Control, Expires")
 	utilgo.UseHTTPCache(out, 604800)
 	return res.StatusCode
 }
