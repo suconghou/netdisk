@@ -135,7 +135,16 @@ func Get() {
 // Put upload file to the backend
 func Put() {
 	if len(os.Args) >= 3 {
-
+		overwrite := utilgo.HasFlag("-f")
+		fileName := os.Args[2]
+		file, err := utilgo.GetOpenFile(fileName)
+		if err == nil {
+			defer file.Close()
+			err = fslayer.Put(fileName, overwrite, file)
+		}
+		if err != nil {
+			util.Log.Print(err)
+		}
 	} else {
 		util.Log.Print("Usage:disk put filepath")
 	}

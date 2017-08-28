@@ -174,6 +174,14 @@ func GetFileInfo(filePath string, dlink bool) error {
 	return nil
 }
 
+// Put upload data to backend
+func Put(savePath string, overwrite bool, r io.Reader) error {
+	if config.IsPcs() {
+		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Put(savePath, overwrite, r)
+	}
+	return nil
+}
+
 // PutFile upload files to backend
 func PutFile(filePath string, savePath string, fileSize uint64, ondup string) {
 

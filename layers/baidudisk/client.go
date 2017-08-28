@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"path"
 	"strconv"
 	"time"
@@ -233,8 +234,17 @@ func (bc *Bclient) GetDownloadURL(file string) string {
 }
 
 // Put upload files
-func (bc *Bclient) Put() {
-
+func (bc *Bclient) Put(savePath string, overwrite bool, r io.Reader) error {
+	js, err := bc.APIPut(savePath, overwrite, r)
+	if err != nil {
+		return err
+	}
+	errMsg := js.Get("error_msg").MustString()
+	if errMsg != "" {
+		return fmt.Errorf(errMsg)
+	}
+	fmt.Println(fmt.Sprintf("%s %s %d\n已上传", js.Get("path").MustString(), js.Get("md5").MustString(), js.Get("size").MustInt()))
+	return nil
 }
 
 // APIPutURL return upload url
@@ -247,8 +257,19 @@ func (bc *Bclient) APIPutURL(savePath string, overwrite bool) string {
 }
 
 // APIPut return put resp
-func (bc *Bclient) APIPut(savePath string, overwrite bool) (*simplejson.Json, error) {
-	body, err := httpPost(bc.APIPutURL(savePath, overwrite), "application/x-www-form-urlencoded", nil)
+func (bc *Bclient) APIPut(savePath string, overwrite bool, r io.Reader) (*simplejson.Json, error) {
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+	fileWriter, err := bodyWriter.CreateFormFile("file", path.Base(savePath))
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(fileWriter, r)
+	if err != nil {
+		return nil, err
+	}
+	bodyWriter.Close()
+	body, err := httpPost(bc.APIPutURL(savePath, overwrite), bodyWriter.FormDataContentType(), bodyBuf)
 	if err != nil {
 		return nil, err
 	}
