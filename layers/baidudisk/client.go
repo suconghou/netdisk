@@ -2,9 +2,12 @@ package baidudisk
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"os"
 	"path"
 	"strconv"
 	"time"
@@ -277,8 +280,13 @@ func (bc *Bclient) APIPut(savePath string, overwrite bool, r io.Reader) (*simple
 }
 
 // RapidPut upload files
-func (bc *Bclient) RapidPut() {
-
+func (bc *Bclient) RapidPut(file *os.File, savePath string, overwrite bool) error {
+	js, err := bc.APIRapidPut(file, savePath, overwrite)
+	if err != nil {
+		return err
+	}
+	fmt.Println(js)
+	return nil
 }
 
 // APIRapidPutURL return rapid upload url
@@ -291,8 +299,26 @@ func (bc *Bclient) APIRapidPutURL(savePath string, fileSize int64, md5Str string
 }
 
 // APIRapidPut return RapidPut resp
-func (bc *Bclient) APIRapidPut(savePath string, fileSize int64, md5Str string, sliceMd5 string, contentCrc32 string, overwrite bool) (*simplejson.Json, error) {
-	body, err := httpPost(bc.APIRapidPutURL(savePath, fileSize, md5Str, sliceMd5, contentCrc32, overwrite), "application/x-www-form-urlencoded", nil)
+func (bc *Bclient) APIRapidPut(file *os.File, savePath string, overwrite bool) (*simplejson.Json, error) {
+	info, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	fileSize := info.Size()
+	md5byte, err := utilgo.GetFileHash(file, "md5")
+	if err != nil {
+		return nil, err
+	}
+	contentMd5 := hex.EncodeToString(md5byte)
+	crc32byte, err := utilgo.GetFileHash(file, "crc32")
+	if err != nil {
+		return nil, err
+	}
+	contentCrc32 := hex.EncodeToString(crc32byte)
+	slice := make([]byte, 262144)
+	file.ReadAt(slice, 0)
+	sliceMd5 := fmt.Sprintf("%x", md5.Sum(slice))
+	body, err := httpPostWait(bc.APIRapidPutURL(savePath, fileSize, contentMd5, sliceMd5, contentCrc32, overwrite), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
