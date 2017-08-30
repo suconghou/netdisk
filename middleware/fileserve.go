@@ -74,7 +74,7 @@ func Files(w http.ResponseWriter, r *http.Request, match []string) {
 		return nil
 	}()
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 

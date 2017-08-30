@@ -144,7 +144,7 @@ func status(w http.ResponseWriter, r *http.Request) {
 	sysStatus.Hostname, _ = os.Hostname()
 	sysStatus.Pid = os.Getpid()
 	if bs, err := json.Marshal(&sysStatus); err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
 		utilgo.JSONPut(w, bs, true, 60)
 	}

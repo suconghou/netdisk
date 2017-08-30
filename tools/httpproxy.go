@@ -15,7 +15,7 @@ func HTTPProxy(port int, url string, transport *http.Transport) error {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "OPTIONS" {
 			utilgo.CrossShare(w.Header(), r.Header, str)
-			http.Error(w, "ok", 200)
+			http.Error(w, "ok", http.StatusOK)
 			return
 		}
 		requ := fmt.Sprintf("%s%s", url, r.RequestURI)
