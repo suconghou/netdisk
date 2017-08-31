@@ -539,11 +539,11 @@ func (bc *Bclient) TaskInfo(ids string) error {
 		fileSize, _ := strconv.ParseUint(item.Get("file_size").MustString(), 10, 64)
 		finishTime, _ := strconv.ParseInt(item.Get("finish_time").MustString(), 10, 64)
 		if fileSize > 0 { //已探测出文件大小
-			b.WriteString(fmt.Sprintf("大小:%s\n", utilgo.ByteFormat(fileSize)))
+			b.WriteString(fmt.Sprintf("大小:%d (%s)\n", fileSize, utilgo.ByteFormat(fileSize)))
 			if finishTime > startTime { //已下载完毕
 				duration := finishTime - startTime
 				b.WriteString(fmt.Sprintf("任务完成时间:%s 耗时:%d秒 速度:%.2fKB/s \n", utilgo.DateFormat(finishTime), duration, float64(fileSize)/1024/float64(duration)))
-			} else if finishTime == startTime {
+			} else if finishTime > 0 && finishTime == startTime {
 				b.WriteString(fmt.Sprintf("任务完成时间:%s 云端已秒杀 \n", utilgo.DateFormat(finishTime)))
 			} else {
 				finishedSize, _ := strconv.ParseUint(item.Get("finished_size").MustString(), 10, 64)
