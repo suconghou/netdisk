@@ -1,13 +1,10 @@
 package netlayer
 
 import (
-	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
 	"strconv"
-	"time"
 
 	"github.com/suconghou/utilgo"
 )
@@ -16,49 +13,6 @@ var (
 	range1 = regexp.MustCompile(`^--range:(\d+)-(\d+)$`)
 	range2 = regexp.MustCompile(`^--range:(\d+)-$`)
 )
-
-// Get return response data
-func Get(url string) ([]byte, error) {
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
-}
-
-// Post retrun response data
-func Post(url string, contentType string, body io.Reader) ([]byte, error) {
-	response, err := http.Post(url, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close()
-	bodyStr, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	return bodyStr, err
-}
-
-// PostWait wait a second and retrun response data
-func PostWait(url string, contentType string, body io.Reader) ([]byte, error) {
-	response, err := http.Post(url, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close()
-	time.Sleep(time.Second)
-	bodyStr, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	return bodyStr, nil
-}
 
 // ParseThreadThunkStartEnd return thread thunk start end
 func ParseThreadThunkStartEnd(thread int32, thunk int64, start int64, end int64) (int32, int64, int64, int64) {

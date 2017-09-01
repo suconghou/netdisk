@@ -88,7 +88,7 @@ func (bc *Bclient) APILsURL(p string) string {
 
 // APILs response ls
 func (bc *Bclient) APILs(p string) (*simplejson.Json, error) {
-	body, err := httpGet(bc.APILsURL(p))
+	body, err := utilgo.GetContent(bc.APILsURL(p))
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func (bc *Bclient) APIMkdirURL(p string) string {
 
 // APIMkdir return api resp
 func (bc *Bclient) APIMkdir(p string) (*simplejson.Json, error) {
-	body, err := httpPost(bc.APIMkdirURL(p), "application/x-www-form-urlencoded", nil)
+	body, err := utilgo.PostContent(bc.APIMkdirURL(p), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (bc *Bclient) APIMvURL(source string, target string) string {
 
 // APIMv return mv resp
 func (bc *Bclient) APIMv(source string, target string) (*simplejson.Json, error) {
-	body, err := httpPost(bc.APIMvURL(source, target), "application/x-www-form-urlencoded", nil)
+	body, err := utilgo.PostContent(bc.APIMvURL(source, target), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (bc *Bclient) APICpURL(source string, target string) string {
 
 // APICp return cp resp
 func (bc *Bclient) APICp(source string, target string) (*simplejson.Json, error) {
-	body, err := httpPost(bc.APICpURL(source, target), "application/x-www-form-urlencoded", nil)
+	body, err := utilgo.PostContent(bc.APICpURL(source, target), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (bc *Bclient) APIRmURL(file string) string {
 
 // APIRm return rm resp
 func (bc *Bclient) APIRm(file string) (*simplejson.Json, error) {
-	body, err := httpPost(bc.APIRmURL(file), "application/x-www-form-urlencoded", nil)
+	body, err := utilgo.PostContent(bc.APIRmURL(file), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (bc *Bclient) Get(file string) (io.ReadCloser, error) {
 
 // APIGet return file reader
 func (bc *Bclient) APIGet(file string) (io.ReadCloser, error) {
-	resp, err := httpGetResp(bc.GetDownloadURL(file))
+	resp, err := utilgo.GetResp(bc.GetDownloadURL(file))
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +272,7 @@ func (bc *Bclient) APIPut(savePath string, overwrite bool, r io.Reader) (*simple
 		return nil, err
 	}
 	bodyWriter.Close()
-	body, err := httpPost(bc.APIPutURL(savePath, overwrite), bodyWriter.FormDataContentType(), bodyBuf)
+	body, err := utilgo.PostContent(bc.APIPutURL(savePath, overwrite), bodyWriter.FormDataContentType(), bodyBuf)
 	if err != nil {
 		return nil, err
 	}
@@ -318,7 +318,7 @@ func (bc *Bclient) APIRapidPut(file *os.File, savePath string, overwrite bool) (
 	slice := make([]byte, 262144)
 	file.ReadAt(slice, 0)
 	sliceMd5 := fmt.Sprintf("%x", md5.Sum(slice))
-	body, err := httpPostWait(bc.APIRapidPutURL(savePath, fileSize, contentMd5, sliceMd5, contentCrc32, overwrite), "application/x-www-form-urlencoded", nil)
+	body, err := utilgo.PostContentWait(bc.APIRapidPutURL(savePath, fileSize, contentMd5, sliceMd5, contentCrc32, overwrite), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -348,7 +348,7 @@ func (bc *Bclient) APIInfoURL() string {
 
 // APIInfo response usage info
 func (bc *Bclient) APIInfo() (*simplejson.Json, error) {
-	body, err := httpGet(bc.APIInfoURL())
+	body, err := utilgo.GetContent(bc.APIInfoURL())
 	if err != nil {
 		return nil, err
 	}
@@ -403,7 +403,7 @@ func (bc *Bclient) APIFileInfoURL(file string) string {
 
 // APIFileInfo response info
 func (bc *Bclient) APIFileInfo(file string) (*simplejson.Json, error) {
-	body, err := httpGet(bc.APIFileInfoURL(file))
+	body, err := utilgo.GetContent(bc.APIFileInfoURL(file))
 	if err != nil {
 		return nil, err
 	}
@@ -440,7 +440,7 @@ func (bc *Bclient) APISearchURL(name string) string {
 
 // APISearch return search resp
 func (bc *Bclient) APISearch(name string) (*simplejson.Json, error) {
-	body, err := httpGet(bc.APISearchURL(name))
+	body, err := utilgo.GetContent(bc.APISearchURL(name))
 	if err != nil {
 		return nil, err
 	}
@@ -474,7 +474,7 @@ func (bc *Bclient) APITaskAddURL(savePath string, sourceURL string) string {
 // APITaskAdd return taskadd resp
 func (bc *Bclient) APITaskAdd(savePath string, sourceURL string) (*simplejson.Json, error) {
 	savePath = path.Join(bc.root, savePath)
-	body, err := httpPost(bc.APITaskAddURL(savePath, sourceURL), "application/x-www-form-urlencoded", nil)
+	body, err := utilgo.PostContent(bc.APITaskAddURL(savePath, sourceURL), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -510,7 +510,7 @@ func (bc *Bclient) APITaskListURL() string {
 
 // APITaskList retrun tasklist resp
 func (bc *Bclient) APITaskList() (*simplejson.Json, error) {
-	body, err := httpPost(bc.APITaskListURL(), "application/x-www-form-urlencoded", nil)
+	body, err := utilgo.PostContent(bc.APITaskListURL(), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -564,7 +564,7 @@ func (bc *Bclient) APITaskInfoURL(ids string) string {
 
 // APITaskInfo return taskinfo resp
 func (bc *Bclient) APITaskInfo(ids string) (*simplejson.Json, error) {
-	body, err := httpPost(bc.APITaskInfoURL(ids), "application/x-www-form-urlencoded", nil)
+	body, err := utilgo.PostContent(bc.APITaskInfoURL(ids), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -592,7 +592,7 @@ func (bc *Bclient) APITaskRemoveURL(id string) string {
 
 // APITaskRemove return taskremove resp
 func (bc *Bclient) APITaskRemove(id string) (*simplejson.Json, error) {
-	body, err := httpPost(bc.APITaskRemoveURL(id), "application/x-www-form-urlencoded", nil)
+	body, err := utilgo.PostContent(bc.APITaskRemoveURL(id), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -620,7 +620,7 @@ func (bc *Bclient) APIClearURL() string {
 
 // APIClear return clear resp
 func (bc *Bclient) APIClear() (*simplejson.Json, error) {
-	body, err := httpPost(bc.APIClearURL(), "application/x-www-form-urlencoded", nil)
+	body, err := utilgo.PostContent(bc.APIClearURL(), "application/x-www-form-urlencoded", nil)
 	if err != nil {
 		return nil, err
 	}
