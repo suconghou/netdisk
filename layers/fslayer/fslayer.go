@@ -120,7 +120,7 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	)
 	if stdout {
 		if start == -1 {
-			start = 0
+			start = utilgo.HasFileSize(saveas)
 		}
 		file = os.Stdout
 		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar(filepath.Base(saveas)+" ", " ", nil, os.Stderr), proxy, nil)

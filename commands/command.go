@@ -196,13 +196,12 @@ func Play() {
 			reqHeader                 = netlayer.ParseCookieUaRefer()
 			thread, thunk, start, end = netlayer.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
 		)
-		if !stdout {
-			saveas, err = utilgo.GetStorePath(os.Args[2])
-			if err != nil {
-				util.Log.Printf("%v", err)
-				return
-			}
-		} else {
+		saveas, err = utilgo.GetStorePath(os.Args[2])
+		if err != nil && !stdout {
+			util.Log.Print(err)
+			return
+		}
+		if stdout {
 			util.Log.SetOutput(os.Stderr)
 		}
 		util.Log.Print("Playing " + saveas)

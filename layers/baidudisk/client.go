@@ -105,7 +105,7 @@ func (bc *Bclient) Ls(p string) error {
 		b.WriteString(fmt.Sprintf("%-10s", utilgo.ByteFormat(size)))
 		b.WriteString(fmt.Sprintf("%-20s", item.Get("path").MustString()))
 	}
-	Log.Printf("%s\n%s", name+bc.root+"  ➜  "+p+" "+utilgo.ByteFormat(total), b.String())
+	Log.Printf("%s%s", name+bc.root+"  ➜  "+p+" "+utilgo.ByteFormat(total), b.String())
 	return nil
 }
 
