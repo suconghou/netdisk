@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"os"
 	"path"
@@ -29,6 +30,15 @@ type Bclient struct {
 	infoURL   string
 }
 
+type counter struct {
+	readed    int64
+	total     int64
+	origin    *bytes.Buffer
+	lastrun   time.Time
+	startTime time.Time
+	progress  func(received int64, readed int64, total int64, duration float64, start int64, end int64)
+}
+
 var taskStatusMap = map[string]string{
 	"0": "下载成功",
 	"1": "下载进行中",
@@ -39,6 +49,9 @@ var taskStatusMap = map[string]string{
 	"6": "存储空间不足",
 	"7": "任务已取消",
 }
+
+// Log is a global logger
+var Log = log.New(os.Stdout, "", 0)
 
 // NewClient return a client
 func NewClient(token string, root string) *Bclient {
@@ -52,9 +65,25 @@ func NewClient(token string, root string) *Bclient {
 	}
 }
 
+func (c *counter) Read(p []byte) (int, error) {
+	n, err := c.origin.Read(p)
+	if err != nil {
+		return n, err
+	}
+	if c.progress != nil {
+		c.readed += int64(n)
+		timenow := time.Now()
+		if c.readed == c.total || timenow.Sub(c.lastrun).Seconds() > 1 {
+			c.progress(c.readed, c.readed, c.total, time.Since(c.startTime).Seconds(), 0, c.total)
+			c.lastrun = timenow
+		}
+	}
+	return n, err
+}
+
 // Pwd print current dir
 func (bc *Bclient) Pwd(p string) error {
-	fmt.Println(name + bc.root + "  ➜  " + p)
+	Log.Print(name + bc.root + "  ➜  " + p)
 	return nil
 }
 
@@ -76,8 +105,7 @@ func (bc *Bclient) Ls(p string) error {
 		b.WriteString(fmt.Sprintf("%-10s", utilgo.ByteFormat(size)))
 		b.WriteString(fmt.Sprintf("%-20s", item.Get("path").MustString()))
 	}
-	fmt.Print(name + bc.root + "  ➜  " + p + " " + utilgo.ByteFormat(total))
-	fmt.Println(b.String())
+	Log.Printf("%s\n%s", name+bc.root+"  ➜  "+p+" "+utilgo.ByteFormat(total), b.String())
 	return nil
 }
 
@@ -111,8 +139,7 @@ func (bc *Bclient) Mkdir(p string) error {
 	if errMsg != "" {
 		return fmt.Errorf(errMsg)
 	}
-	fmt.Println(name + bc.root)
-	fmt.Println(" 已创建 " + p)
+	Log.Printf("%s\n已创建 %s", name+bc.root, p)
 	return nil
 }
 
@@ -140,8 +167,7 @@ func (bc *Bclient) Mv(source string, target string) error {
 	if errMsg != "" {
 		return fmt.Errorf(errMsg)
 	}
-	fmt.Println(name + bc.root)
-	fmt.Println(source + " 已移动至 " + target)
+	Log.Printf("%s\n%s 已移动至 %s", name+bc.root, source, target)
 	return nil
 }
 
@@ -169,8 +195,7 @@ func (bc *Bclient) Cp(source string, target string) error {
 	if errMsg != "" {
 		return fmt.Errorf(errMsg)
 	}
-	fmt.Println(name + bc.root)
-	fmt.Println(source + " 已复制至 " + target)
+	Log.Printf("%s\n%s 已复制至 %s", name+bc.root, source, target)
 	return nil
 }
 
@@ -198,8 +223,7 @@ func (bc *Bclient) Rm(file string) error {
 	if errMsg != "" {
 		return fmt.Errorf(errMsg)
 	}
-	fmt.Println(name + bc.root)
-	fmt.Println(file + " 已删除")
+	Log.Printf("%s\n%s 已删除", name+bc.root, file)
 	return nil
 }
 
@@ -236,9 +260,21 @@ func (bc *Bclient) GetDownloadURL(file string) string {
 	return fmt.Sprintf("%s?method=%s&access_token=%s&path=%s", bc.apiURL, "download", bc.token, path.Join(bc.root, file))
 }
 
-// Put upload files
-func (bc *Bclient) Put(savePath string, overwrite bool, r io.Reader) error {
-	js, err := bc.APIPut(savePath, overwrite, r)
+// Put upload files may use rapid upload
+func (bc *Bclient) Put(savePath string, overwrite bool, file *os.File) error {
+	info, err := file.Stat()
+	var (
+		size = info.Size()
+	)
+	if size > 262144 { // 尝试秒传
+		contentMd5, contentCrc32, sliceMd5, err := bc.RapidPut(file, savePath, overwrite)
+		Log.Printf("文件大小: %d\n文件哈希: %s %s\n片段哈希: %s", size, contentMd5, contentCrc32, sliceMd5)
+		if err == nil {
+			Log.Printf("%s 已秒传", savePath)
+			return err
+		}
+	}
+	js, err := bc.APIPut(savePath, overwrite, file, size, utilgo.ProgressBar("", "", nil, os.Stdout))
 	if err != nil {
 		return err
 	}
@@ -246,7 +282,7 @@ func (bc *Bclient) Put(savePath string, overwrite bool, r io.Reader) error {
 	if errMsg != "" {
 		return fmt.Errorf(errMsg)
 	}
-	fmt.Println(fmt.Sprintf("%s %s %d\n已上传", js.Get("path").MustString(), js.Get("md5").MustString(), js.Get("size").MustInt()))
+	Log.Print(fmt.Sprintf("%s %s %d\n已上传", js.Get("path").MustString(), js.Get("md5").MustString(), js.Get("size").MustInt()))
 	return nil
 }
 
@@ -260,19 +296,27 @@ func (bc *Bclient) APIPutURL(savePath string, overwrite bool) string {
 }
 
 // APIPut return put resp
-func (bc *Bclient) APIPut(savePath string, overwrite bool, r io.Reader) (*simplejson.Json, error) {
-	bodyBuf := &bytes.Buffer{}
-	bodyWriter := multipart.NewWriter(bodyBuf)
-	fileWriter, err := bodyWriter.CreateFormFile("file", path.Base(savePath))
+func (bc *Bclient) APIPut(savePath string, overwrite bool, file *os.File, filesize int64, progress func(received int64, readed int64, total int64, duration float64, start int64, end int64)) (*simplejson.Json, error) {
+	var (
+		r               io.Reader
+		bodyBuf         = &bytes.Buffer{}
+		bodyWriter      = multipart.NewWriter(bodyBuf)
+		fileWriter, err = bodyWriter.CreateFormFile("file", path.Base(savePath))
+	)
 	if err != nil {
 		return nil, err
 	}
-	_, err = io.Copy(fileWriter, r)
+	_, err = io.Copy(fileWriter, file)
 	if err != nil {
 		return nil, err
 	}
 	bodyWriter.Close()
-	body, err := utilgo.PostContent(bc.APIPutURL(savePath, overwrite), bodyWriter.FormDataContentType(), bodyBuf)
+	if progress != nil {
+		r = &counter{origin: bodyBuf, total: int64(bodyBuf.Len()), progress: progress, startTime: time.Now()}
+	} else {
+		r = bodyBuf
+	}
+	body, err := utilgo.PostContent(bc.APIPutURL(savePath, overwrite), bodyWriter.FormDataContentType(), r)
 	if err != nil {
 		return nil, err
 	}
@@ -280,13 +324,16 @@ func (bc *Bclient) APIPut(savePath string, overwrite bool, r io.Reader) (*simple
 }
 
 // RapidPut upload files
-func (bc *Bclient) RapidPut(file *os.File, savePath string, overwrite bool) error {
-	js, err := bc.APIRapidPut(file, savePath, overwrite)
+func (bc *Bclient) RapidPut(file *os.File, savePath string, overwrite bool) (string, string, string, error) {
+	contentMd5, contentCrc32, sliceMd5, js, err := bc.APIRapidPut(file, savePath, overwrite)
 	if err != nil {
-		return err
+		return contentMd5, contentCrc32, sliceMd5, err
 	}
-	fmt.Println(js)
-	return nil
+	errMsg := js.Get("error_msg").MustString()
+	if errMsg != "" {
+		return contentMd5, contentCrc32, sliceMd5, fmt.Errorf(errMsg)
+	}
+	return contentMd5, contentCrc32, sliceMd5, nil
 }
 
 // APIRapidPutURL return rapid upload url
@@ -299,30 +346,32 @@ func (bc *Bclient) APIRapidPutURL(savePath string, fileSize int64, md5Str string
 }
 
 // APIRapidPut return RapidPut resp
-func (bc *Bclient) APIRapidPut(file *os.File, savePath string, overwrite bool) (*simplejson.Json, error) {
+func (bc *Bclient) APIRapidPut(file *os.File, savePath string, overwrite bool) (string, string, string, *simplejson.Json, error) {
 	info, err := file.Stat()
 	if err != nil {
-		return nil, err
+		return "", "", "", nil, err
 	}
 	fileSize := info.Size()
 	md5byte, err := utilgo.GetFileHash(file, "md5")
 	if err != nil {
-		return nil, err
+		return "", "", "", nil, err
 	}
 	contentMd5 := hex.EncodeToString(md5byte)
 	crc32byte, err := utilgo.GetFileHash(file, "crc32")
 	if err != nil {
-		return nil, err
+		return "", "", "", nil, err
 	}
 	contentCrc32 := hex.EncodeToString(crc32byte)
 	slice := make([]byte, 262144)
 	file.ReadAt(slice, 0)
 	sliceMd5 := fmt.Sprintf("%x", md5.Sum(slice))
 	body, err := utilgo.PostContentWait(bc.APIRapidPutURL(savePath, fileSize, contentMd5, sliceMd5, contentCrc32, overwrite), "application/x-www-form-urlencoded", nil)
+	defer file.Seek(0, 0)
 	if err != nil {
-		return nil, err
+		return "", "", "", nil, err
 	}
-	return simplejson.NewJson(body)
+	js, err := simplejson.NewJson(body)
+	return contentMd5, contentCrc32, sliceMd5, js, err
 }
 
 // Info print the disk usage
@@ -337,7 +386,7 @@ func (bc *Bclient) Info() error {
 	b.WriteString(name + "\n总大小:" + utilgo.ByteFormat(quota))
 	b.WriteString("\n已使用:" + utilgo.ByteFormat(used))
 	b.WriteString(fmt.Sprintf("\n利用率:%.1f%%", float32(used)/float32(quota)*100))
-	fmt.Println(b.String())
+	Log.Print(b.String())
 	return nil
 }
 
@@ -377,7 +426,7 @@ func (bc *Bclient) FileInfo(p string, dlink bool) error {
 	if blockstr != "" {
 		blocks, err := simplejson.NewJson([]byte(item.Get("block_list").MustString()))
 		if err != nil {
-			fmt.Println(b.String())
+			Log.Print(b.String())
 			return err
 		}
 		blocksarr := blocks.MustStringArray()
@@ -392,7 +441,7 @@ func (bc *Bclient) FileInfo(p string, dlink bool) error {
 			b.WriteString("\n下载地址:" + bc.GetDownloadURL(p))
 		}
 	}
-	fmt.Println(b.String())
+	Log.Print(b.String())
 	return nil
 }
 
@@ -428,8 +477,7 @@ func (bc *Bclient) Search(fileName string) error {
 		b.WriteString(fmt.Sprintf("%-10s", utilgo.ByteFormat(size)))
 		b.WriteString(fmt.Sprintf("%-20s", item.Get("path").MustString()))
 	}
-	fmt.Print(name + bc.root + "  ➜  搜索[" + fileName + "] " + utilgo.ByteFormat(total))
-	fmt.Println(b.String())
+	Log.Printf("%s\n%s", name+bc.root+"  ➜  搜索["+fileName+"] "+utilgo.ByteFormat(total), b.String())
 	return nil
 }
 
@@ -458,9 +506,9 @@ func (bc *Bclient) TaskAdd(savePath string, url string) error {
 		return fmt.Errorf(errMsg)
 	}
 	id := js.Get("task_id").MustInt()
-	fmt.Printf("任务ID %d\n", id)
+	Log.Printf("任务ID %d\n", id)
 	if js.Get("rapid_download").MustInt() == 1 {
-		fmt.Println("离线已秒杀")
+		Log.Print("离线已秒杀")
 		bc.TaskInfo(strconv.Itoa(id))
 	}
 	return nil
@@ -499,7 +547,7 @@ func (bc *Bclient) TaskList() error {
 		savePath := item.Get("save_path").MustString()
 		b.WriteString(fmt.Sprintf("\n任务ID:%s\n任务名称:%s\n创建时间:%s\n任务状态:%s\n源地址:%s \n存储至:%s\n", id, name, createTime, status, sourceURL, savePath))
 	}
-	fmt.Printf("%s%s  ➜  离线任务: %d个任务 %s", name, bc.root, js.Get("total").MustInt(), b.String())
+	Log.Printf("%s%s  ➜  离线任务: %d个任务 %s", name, bc.root, js.Get("total").MustInt(), b.String())
 	return nil
 }
 
@@ -553,7 +601,7 @@ func (bc *Bclient) TaskInfo(ids string) error {
 		}
 		b.WriteString(fmt.Sprintf("原地址:%s\n存储至:%s\n", item.Get("source_url").MustString(), item.Get("save_path").MustString()))
 	}
-	fmt.Printf("%s%s  ➜  任务详情: %s", name, bc.root, b.String())
+	Log.Printf("%s%s  ➜  任务详情: %s", name, bc.root, b.String())
 	return nil
 }
 
@@ -581,7 +629,7 @@ func (bc *Bclient) TaskRemove(id string) error {
 	if errMsg != "" {
 		return fmt.Errorf(errMsg)
 	}
-	fmt.Printf("已取消任务%s\n", id)
+	Log.Printf("已取消任务%s\n", id)
 	return nil
 }
 
@@ -609,7 +657,7 @@ func (bc *Bclient) Clear() error {
 	if errMsg != "" {
 		return fmt.Errorf(errMsg)
 	}
-	fmt.Println("已清空回收站 " + strconv.Itoa(js.GetPath("extra.succnum").MustInt()) + "个项目被清除")
+	Log.Print("已清空回收站 " + strconv.Itoa(js.GetPath("extra.succnum").MustInt()) + "个项目被清除")
 	return nil
 }
 

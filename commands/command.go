@@ -134,19 +134,29 @@ func Get() {
 
 // Put upload file to the backend
 func Put() {
+	var (
+		file      = os.Stdin
+		overwrite = true
+		fileName  = "-"
+		err       error
+	)
 	if len(os.Args) >= 3 {
-		overwrite := utilgo.HasFlag("-f")
-		fileName := os.Args[2]
-		file, err := utilgo.GetOpenFile(fileName)
-		if err == nil {
-			defer file.Close()
-			err = fslayer.Put(fileName, overwrite, file)
+		fileName = os.Args[2]
+		if fileName != "-" {
+			file, err = utilgo.GetOpenFile(fileName)
 		}
-		if err != nil {
-			util.Log.Print(err)
+		overwrite = utilgo.HasFlag("-f")
+		saveName, _ := utilgo.GetParam("-f")
+		if saveName != "" {
+			fileName = saveName
 		}
-	} else {
-		util.Log.Print("Usage:disk put filepath")
+	}
+	if err == nil {
+		defer file.Close()
+		err = fslayer.Put(fileName, overwrite, file)
+	}
+	if err != nil {
+		util.Log.Print(err)
 	}
 }
 

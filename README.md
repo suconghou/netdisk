@@ -67,69 +67,6 @@ disk help
 
 fast download and multithreading
 
-send to stdout for gzip or xz decode play `disk play test.mp4.gz --stdout | gzip -d | mpv  -`
-
-
-
-### speed and thunk control
-
-`--fast/--slow   --fat/--thin` can be used for `disk wget file/url` and `disk play file/url`
-
-for thread
-
-default thread is 8
-```
-disk wget file/url --fast // up to 16 thread
-disk wget file/url --slow // set to 4 thread
-```
-
-for thunk
-default thunk is 2M
-```
-disk wget file/url --fat // set to 8M
-disk wget file/url --thin // set to 256K
-```
-
-
-
-
-### request with cookie or refer or ua
-
-`cookie,ua,refer` control can be used for `disk wget url` and `disk play url`
-
-`--cookie "cookie string"`
-
-`--refer "http refer string"`
-
-`--ua "user agent string"`
-
-
-`disk reverse` is a reverse proxy server like nginx but can work with upstream proxy
-
-`--socks` use socks5 
-
-`--proxy` use http/https proxy  
-
-`-u https://backend --proxy http://your_http_proxy:6056` 
-( or https://your_http_proxy:6056 , it doesn't matter)
-
-backend is your proxy backend server (can be any url http/https or with uri)
-
-proxy is your http_proxy https_proxy or
-
-socks proxy `--socks 127.0.0.1:1080`
-
-> if your proxy is only http_proxy proxy then you can only proxy http backend (no https backend) 
-
-
-`disk proxy` give you a http_proxy https_proxy 
-
-socks to http/https/socks
-
-`-p` is the listen port
-
-`--socks` is a upstream socks5 proxy  eg `x.x.x.x:6056`
-
 
 ### other flag
 
@@ -138,21 +75,6 @@ socks to http/https/socks
 
 `disk info file -i` show file info and download link ,the link can be downloaded in multithread
 
-use `GET` method to detect url `Content-Length` instead of `HEAD` method in case of some server declined
-
-`disk wget http://xxx  --GET`
-
-`disk wget file/url --debug` see debug log information
-
-use  `--range:1230-123456` or `--range:45612-` to force get certain range content, it is supported  both `wget` and `play` action
-
-you also can use
-```
-disk wget file --range:0-88000
-disk wget file --range:88000-988000
-disk wget file --range:988000-
-```
-thus will not break your file which just like `disk wget file`
 
 ```
 https://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id=fNThTaiSso4OtkgTsbtiFpyt&redirect_uri=oob&scope=netdisk
@@ -160,3 +82,153 @@ https://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id=fNTh
 
 http://pan.plyz.net/Man.aspx
 
+
+## Static File Server
+
+`disk serve` start a static file server 
+
+`disk serve -h` see help
+
+`-p` set the listen port
+
+`-d` set the document root
+
+> directory list is enabled by default
+
+## Wget Download
+
+`disk wget http://url`
+
+like wget but only for http/https 
+
+It is multithreading and with awesome features
+
+### http header control
+
+`--cookie "cookie string"`
+
+`--refer "http refer string"`
+
+`--ua "user agent string"`
+
+### range control
+
+use `--range:1230-123456` or `--range:1230-` to force get certain range content
+
+you also can use
+```
+disk wget url --range:0-88000
+disk wget url --range:88000-988000
+disk wget url --range:988000-
+```
+thus will not break your file which just like `disk wget url`
+
+### speed control
+
+`--fast/--slow` `--fat/--thin` can be used for speed control
+
+for thread 
+
+default thread is 8
+```
+disk wget url --fast // up to 16 thread
+disk wget url --slow // set to 4 thread
+```
+
+for thunk
+
+default thunk is 2097152 (2MB)
+```
+disk wget url --fat // set to 8MB
+disk wget url --thin // set to 256KB
+```
+
+## Play Url Video
+
+`disk play url`
+
+is like wget download but have another two features
+
+### It call video player automatically
+
+It calls player once download > 2%
+
+on unix use `mpv` player
+
+on windows use `PotPlayerMini.exe` player
+
+those commands should be called directly or 
+it will failed silently
+
+### It can write data to stdout rather than file
+
+use `--stdout` to write data to stdout ranther than file
+
+for example 
+
+use another player to play
+
+`disk play url --stdout | ffplay -i -`
+
+write to stdout for gzip or xz decode play 
+
+`disk play url --stdout | gzip -d | mpv  -`
+
+
+## Proxy 
+
+`disk proxy` 
+
+`disk reverse`
+
+### Reverse Proxy
+
+`disk reverse` start a reverse proxy server
+
+it is like nginx reverse proxy , but can work with upstream proxy
+
+`disk reverse -h` see help
+
+`-u` is your reverse proxy url aka proxy_pass url
+
+> it can be any url http/https or with uri
+
+`-p` is the server port, default 8123
+
+#### Reverse Proxy With Upstream Proxy
+
+`-proxy` to use an upstream http(s) proxy
+
+> `-proxy http://your_http_proxy:6056` or `-proxy https://your_http_proxy:6056` 
+
+`-socks` to use an upstream socks5 proxy
+
+> `-socks 127.0.0.1:1080`
+
+**`-socks` is used if both proxy are configured**
+
+> if your proxy is only http_proxy proxy then you can only proxy http backend (no https backend) 
+
+
+
+### Forward Proxy
+
+`disk proxy` start a http/https/socks5 proxy server 
+
+`disk proxy -h` see help
+
+`-p` is the proxy server port, default 8123
+
+#### http(s) proxy
+
+`disk proxy` start the server can be used as a http proxy and https proxy server
+
+#### socks5 proxy
+
+`disk proxy` start the server can be used as a socks5 proxy server
+
+#### socks5 to http(s) proxy
+
+use `-socks` to set an upstream socks5 proxy
+
+which all the proxy request(http/https/socks5) will pass to 
