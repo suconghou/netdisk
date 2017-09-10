@@ -1,9 +1,9 @@
 # netdisk
 
 
-baidu netdisk
+baidu netdisk use pcs api
 
-pcs api for file download
+and with some useful tools
 
 ### usage
 
@@ -30,8 +30,6 @@ disk put /local/file
 
 disk rm /path/to/file
 
-disk wget /path/to/file
-
 disk wget http://xxx
 
 disk play /path/to/file
@@ -54,14 +52,6 @@ disk task info taskId
 
 disk task remove taskId
 
-disk config set "token"
-
-disk config setapp "app"
-
-disk config get
-
-disk config list
-
 disk help
 ```
 
@@ -70,17 +60,14 @@ fast download and multithreading
 
 ### other flag
 
-
 `disk put local_file -f`  fore rewrite remote file if conflicted
 
-`disk info file -i` show file info and download link ,the link can be downloaded in multithread
+`disk info file --link` show file info and download link ,the link can be downloaded in multithread
 
 
 ```
 https://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id=fNThTaiSso4OtkgTsbtiFpyt&redirect_uri=oob&scope=netdisk
 ```
-
-http://pan.plyz.net/Man.aspx
 
 
 ## Static File Server
@@ -173,6 +160,10 @@ use another player to play
 write to stdout for gzip or xz decode play 
 
 `disk play url --stdout | gzip -d | mpv  -`
+
+play exist file but the remain data download to stdout to play
+
+`(cat a.flv && disk play /test/a.flv --stdout) | mpv -`
 
 
 ## Proxy 
