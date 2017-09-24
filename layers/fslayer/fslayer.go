@@ -50,7 +50,7 @@ func ListDir(filePath string, keep bool) error {
 func Get(filePath string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64) error {
 	if config.IsPcs() {
 		url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(filePath)
-		return WgetURL(url, saveas, reqHeader, thread, thunk, start, end, nil)
+		return WgetURL(url, saveas, reqHeader, thread, thunk, start, end, &http.Transport{DisableKeepAlives: true})
 	}
 	// 腾讯云 cos
 	return nil
@@ -101,7 +101,7 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 func Play(filePath string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, stdout bool) error {
 	if config.IsPcs() {
 		url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(filePath)
-		return PlayURL(url, saveas, reqHeader, thread, thunk, start, end, stdout, nil)
+		return PlayURL(url, saveas, reqHeader, thread, thunk, start, end, stdout, &http.Transport{DisableKeepAlives: true})
 	}
 	return nil
 }
