@@ -27,7 +27,7 @@ var RoutePath = []routeInfo{
 	{regexp.MustCompile(`^/imgs/(.+)$`), middleware.Imgs},
 	{regexp.MustCompile(`^/play/(.+)$`), middleware.MediaStreamAPI},
 	{regexp.MustCompile(`^/net/(.+)$`), middleware.NetStreamAPI},
-	{regexp.MustCompile(`^/(?:(https?):/?)?(?:\w+\.)+\w+(?::\d+)?/.*$`), middleware.Pipe},
+	{regexp.MustCompile(`^/(?:(https?):/?)?(?:[\w\-]+\.)+[\w\-]+(?::\d+)?/.*$`), middleware.Pipe},
 }
 
 func serveHTTP(target *url.URL) func(http.ResponseWriter, *http.Request, []string) {
