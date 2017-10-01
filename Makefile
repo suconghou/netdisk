@@ -8,3 +8,6 @@ windows:
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64  go build -v -o disk.exe -a -ldflags "-s -w" disk.go  
 dev:
 	go build disk.go
+dockerpush:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64  go build -v -o docker/netdisk -a -ldflags "-s -w" disk.go
+	cd docker && docker build -t="suconghou/netdisk" . && docker images && docker push suconghou/netdisk
