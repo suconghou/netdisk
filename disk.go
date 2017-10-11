@@ -102,6 +102,8 @@ func cli() {
 		commands.HTTPProxy()
 	case "nc":
 		commands.Nc()
+	case "network":
+		commands.Network()
 	default:
 		commands.Usage()
 	}

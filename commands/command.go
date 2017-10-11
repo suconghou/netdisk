@@ -452,6 +452,40 @@ func Nc() {
 	}
 }
 
+// Network test http speed
+func Network() {
+	var (
+		thunk       uint
+		timeout     uint
+		input       string
+		proxy       string
+		socks       string
+		ferr        flag.ErrorHandling
+		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
+		transport   *http.Transport
+	)
+	CommandLine.UintVar(&thunk, "s", 256, "thunk size")
+	CommandLine.UintVar(&timeout, "t", 15, "timeout")
+	CommandLine.StringVar(&input, "i", "-", "input file")
+	CommandLine.StringVar(&proxy, "proxy", "", "http proxy")
+	CommandLine.StringVar(&socks, "socks", "", "socks proxy")
+	err := CommandLine.Parse(os.Args[2:])
+	if err == nil {
+		if socks != "" {
+			transport, err = util.MakeSocksProxy(socks)
+		} else if proxy != "" {
+			transport, err = util.MakeHTTPProxy(proxy)
+		}
+		if err == nil {
+			err = tools.SpeedTest(input, thunk, timeout, transport)
+		}
+	}
+	if err != nil {
+		util.Log.Print(err)
+	}
+
+}
+
 // Usage print help message
 func Usage() {
 	if len(os.Args) > 1 && os.Args[1] == "-v" {
