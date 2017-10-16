@@ -438,13 +438,13 @@ func Nc() {
 		if err == nil {
 			if len(os.Args) >= 6 {
 				address = os.Args[2]
-				err = tools.Nc(address, port, os.Args[4], os.Args[5])
+				err = tools.NcTCP(address, port, false, true, os.Args[4], os.Args[5])
 			}
 		}
 	} else {
 		port, err = strconv.Atoi(str)
 		if err == nil {
-			err = tools.Nc(address, port, "", "")
+			err = tools.NcTCP(address, port, true, true, "", "")
 		}
 	}
 	if err != nil {
