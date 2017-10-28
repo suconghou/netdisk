@@ -49,7 +49,7 @@ func ListDir(filePath string, keep bool) error {
 func Get(filePath string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64) error {
 	if config.IsPcs() {
 		url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(filePath)
-		return WgetURL(url, saveas, reqHeader, thread, thunk, start, end, &http.Transport{DisableKeepAlives: true})
+		return WgetURL(url, saveas, reqHeader, thread, thunk, start, end, nil)
 	}
 	// 腾讯云 cos
 	return nil
@@ -58,6 +58,7 @@ func Get(filePath string, saveas string, reqHeader http.Header, thread int32, th
 // WgetURL download a url file
 func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, proxy *http.Transport) error {
 	var (
+		logger      io.Writer
 		startstr    string
 		thunkstr    string
 		showsizestr string
@@ -70,7 +71,10 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	if start == -1 {
 		start = cstart
 	}
-	loader := fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar("", "", nil, nil), proxy, nil)
+	if os.Getenv("debug") != "" {
+		logger = os.Stderr
+	}
+	loader := fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar("", "", nil, nil), proxy, logger)
 	body, _, total, filesize, thread, err := loader.Load(start, end, nil)
 	if err != nil {
 		if err == io.EOF {
@@ -100,7 +104,7 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 func Play(filePath string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, stdout bool) error {
 	if config.IsPcs() {
 		url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(filePath)
-		return PlayURL(url, saveas, reqHeader, thread, thunk, start, end, stdout, &http.Transport{DisableKeepAlives: true})
+		return PlayURL(url, saveas, reqHeader, thread, thunk, start, end, stdout, nil)
 	}
 	return nil
 }
