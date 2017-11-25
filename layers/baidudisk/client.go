@@ -31,12 +31,10 @@ type Bclient struct {
 }
 
 type counter struct {
-	readed    int64
-	total     int64
-	origin    *bytes.Buffer
-	lastrun   time.Time
-	startTime time.Time
-	progress  func(received int64, readed int64, total int64, duration float64, start int64, end int64)
+	readed   int64
+	total    int64
+	origin   *bytes.Buffer
+	progress func(received int64, readed int64, total int64, start int64, end int64)
 }
 
 var taskStatusMap = map[string]string{
@@ -72,11 +70,7 @@ func (c *counter) Read(p []byte) (int, error) {
 	}
 	if c.progress != nil {
 		c.readed += int64(n)
-		timenow := time.Now()
-		if c.readed == c.total || timenow.Sub(c.lastrun).Seconds() > 1 {
-			c.progress(c.readed, c.readed, c.total, time.Since(c.startTime).Seconds(), 0, c.total)
-			c.lastrun = timenow
-		}
+		c.progress(c.readed, c.readed, c.total, 0, c.total)
 	}
 	return n, err
 }
@@ -296,7 +290,7 @@ func (bc *Bclient) APIPutURL(savePath string, overwrite bool) string {
 }
 
 // APIPut return put resp
-func (bc *Bclient) APIPut(savePath string, overwrite bool, file *os.File, filesize int64, progress func(received int64, readed int64, total int64, duration float64, start int64, end int64)) (*simplejson.Json, error) {
+func (bc *Bclient) APIPut(savePath string, overwrite bool, file *os.File, filesize int64, progress func(received int64, readed int64, total int64, start int64, end int64)) (*simplejson.Json, error) {
 	var (
 		r               io.Reader
 		bodyBuf         = &bytes.Buffer{}
@@ -312,7 +306,7 @@ func (bc *Bclient) APIPut(savePath string, overwrite bool, file *os.File, filesi
 	}
 	bodyWriter.Close()
 	if progress != nil {
-		r = &counter{origin: bodyBuf, total: int64(bodyBuf.Len()), progress: progress, startTime: time.Now()}
+		r = &counter{origin: bodyBuf, total: int64(bodyBuf.Len()), progress: progress}
 	} else {
 		r = bodyBuf
 	}
