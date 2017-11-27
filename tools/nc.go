@@ -80,12 +80,12 @@ func NcTCP(address string, port int, serve bool, prog bool, act string, arg stri
 		} else {
 			co = conn
 		}
-		p1die := make(chan struct{})
+		p1die := make(chan bool)
 		go func(c io.ReadWriter) {
 			io.Copy(c, os.Stdin)
 			close(p1die)
 		}(co)
-		p2die := make(chan struct{})
+		p2die := make(chan bool)
 		go func(c io.ReadWriter) {
 			io.Copy(os.Stdout, c)
 			close(p2die)
@@ -111,12 +111,12 @@ func NcTCP(address string, port int, serve bool, prog bool, act string, arg stri
 	} else {
 		co = conn
 	}
-	p1die := make(chan struct{})
+	p1die := make(chan bool)
 	go func(c io.ReadWriter) {
 		io.Copy(c, os.Stdin)
 		close(p1die)
 	}(co)
-	p2die := make(chan struct{})
+	p2die := make(chan bool)
 	go func(c io.ReadWriter) {
 		io.Copy(os.Stdout, c)
 		close(p2die)

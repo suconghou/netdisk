@@ -66,9 +66,9 @@ func ProxySocks(client net.Conn, dialer proxy.Dialer) error {
 		}
 		client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) //响应客户端连接成功
 		//进行转发
-		p1die := make(chan struct{})
+		p1die := make(chan bool)
 		go func() { io.Copy(server, client); close(p1die) }()
-		p2die := make(chan struct{})
+		p2die := make(chan bool)
 		go func() { io.Copy(client, server); close(p2die) }()
 		select {
 		case <-p1die:
@@ -105,9 +105,9 @@ func ProxySocks(client net.Conn, dialer proxy.Dialer) error {
 			return err
 		}
 	}
-	p1die := make(chan struct{})
+	p1die := make(chan bool)
 	go func() { io.Copy(server, client); close(p1die) }()
-	p2die := make(chan struct{})
+	p2die := make(chan bool)
 	go func() { io.Copy(client, server); close(p2die) }()
 	select {
 	case <-p1die:
