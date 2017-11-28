@@ -19,6 +19,10 @@ import (
 	"github.com/suconghou/utilgo"
 )
 
+const (
+	index = "index.html"
+)
+
 var (
 	startTime = time.Now()
 	port      = 6060
@@ -167,9 +171,9 @@ func routeMatch(w http.ResponseWriter, r *http.Request) {
 }
 
 func fallback(w http.ResponseWriter, r *http.Request) {
-	files := []string{"index.html"}
+	files := []string{index}
 	if r.URL.Path != "/" {
-		files = []string{r.URL.Path, path.Join(r.URL.Path, "index.html")}
+		files = []string{r.URL.Path, path.Join(r.URL.Path, index)}
 	}
 	if !tryFiles(files, w, r) {
 		if utilgo.IsURL(r.RequestURI) {
