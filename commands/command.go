@@ -460,6 +460,9 @@ func Network() {
 		input       string
 		proxy       string
 		socks       string
+		host        string
+		path        string
+		https       bool
 		ferr        flag.ErrorHandling
 		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
 		transport   *http.Transport
@@ -469,6 +472,10 @@ func Network() {
 	CommandLine.StringVar(&input, "i", "-", "input file")
 	CommandLine.StringVar(&proxy, "proxy", "", "http proxy")
 	CommandLine.StringVar(&socks, "socks", "", "socks proxy")
+	CommandLine.StringVar(&host, "host", "", "http host")
+	CommandLine.StringVar(&path, "path", "", "http path")
+	CommandLine.BoolVar(&https, "https", false, "use https")
+
 	err := CommandLine.Parse(os.Args[2:])
 	if err == nil {
 		if socks != "" {
@@ -477,7 +484,11 @@ func Network() {
 			transport, err = util.MakeHTTPProxy(proxy)
 		}
 		if err == nil {
-			err = tools.SpeedTest(input, thunk, timeout, transport)
+			if host == "" {
+				err = tools.SpeedTest(input, thunk, timeout, transport)
+			} else {
+				err = tools.SpeedTestWithHost(input, host, path, https, thunk, timeout, transport)
+			}
 		}
 	}
 	if err != nil {
