@@ -115,7 +115,7 @@ func Rm() {
 
 // Get do a simple download
 func Get() {
-	if len(os.Args) >= 3 && !utilgo.IsURL(os.Args[2]) {
+	if len(os.Args) >= 3 && !util.IsURL(os.Args[2]) {
 		reqHeader := netlayer.ParseCookieUaRefer()
 		thread, thunk, start, end := netlayer.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
 		saveas, err := utilgo.GetStorePath(os.Args[2])
@@ -162,7 +162,7 @@ func Put() {
 
 // Wget url like wget
 func Wget() {
-	if len(os.Args) >= 3 && utilgo.IsURL(os.Args[2]) {
+	if len(os.Args) >= 3 && util.IsURL(os.Args[2]) {
 		var (
 			reqHeader                 = netlayer.ParseCookieUaRefer()
 			thread, thunk, start, end = netlayer.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
@@ -205,7 +205,7 @@ func Play() {
 			util.Log.SetOutput(os.Stderr)
 		}
 		util.Log.Print("Playing " + saveas)
-		if utilgo.IsURL(os.Args[2]) {
+		if util.IsURL(os.Args[2]) {
 			transport, err := util.GetProxy()
 			if err != nil {
 				util.Log.Print(err)

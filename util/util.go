@@ -6,10 +6,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 
 	"github.com/suconghou/utilgo"
 	"golang.org/x/net/proxy"
 )
+
+var urlReg = regexp.MustCompile(`^(?i:https?)://[[:print:]]{1,500}$`)
 
 // Log is a global logger
 var Log = log.New(os.Stdout, "", 0)
@@ -48,4 +51,9 @@ func GetProxy() (*http.Transport, error) {
 		return MakeHTTPProxy(str)
 	}
 	return nil, nil
+}
+
+// IsURL if the given string is an url
+func IsURL(url string) bool {
+	return urlReg.MatchString(url)
 }

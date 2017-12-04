@@ -93,6 +93,7 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	}
 	util.Log.Printf("%s\n线程%d%s%s%s", file.Name(), thread, thunkstr, showsizestr, startstr)
 	n, err := io.Copy(file, body)
+	defer body.Close()
 	if err != nil {
 		return err
 	}
@@ -162,6 +163,7 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 	}
 	util.Log.Printf("%s\n线程%d%s%s%s", file.Name(), thread, thunkstr, showsizestr, startstr)
 	n, err := io.Copy(file, body)
+	defer body.Close()
 	if err != nil {
 		return err
 	}
