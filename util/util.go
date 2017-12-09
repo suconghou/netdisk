@@ -57,3 +57,22 @@ func GetProxy() (*http.Transport, error) {
 func IsURL(url string) bool {
 	return urlReg.MatchString(url)
 }
+
+// GetMirrors return url mirrors
+func GetMirrors() map[string]int {
+	found := false
+	var mirrors = map[string]int{}
+	for _, item := range os.Args {
+		if !found {
+			if item == "--mirrors" {
+				found = true
+			}
+		} else if IsURL(item) {
+			mirrors[item] = 1
+		}
+	}
+	if len(mirrors) > 0 {
+		return mirrors
+	}
+	return nil
+}

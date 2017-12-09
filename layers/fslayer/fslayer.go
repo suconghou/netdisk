@@ -75,7 +75,7 @@ func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 		logger = os.Stderr
 	}
 	loader := fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar("", "", nil, nil), proxy, logger)
-	body, _, total, filesize, thread, err := loader.Load(start, end, nil)
+	body, _, total, filesize, thread, err := loader.Load(start, end, util.GetMirrors())
 	if err != nil {
 		if err == io.EOF {
 			return fmt.Errorf("该文件已经下载完毕")
@@ -145,7 +145,7 @@ func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thu
 		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar("", "", hook, nil), proxy, nil)
 	}
 	defer file.Close()
-	body, _, total, filesize, thread, err := loader.Load(start, end, nil)
+	body, _, total, filesize, thread, err := loader.Load(start, end, util.GetMirrors())
 	if err != nil {
 		if err == io.EOF {
 			return fmt.Errorf("该文件已经下载完毕")
