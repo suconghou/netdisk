@@ -2,6 +2,7 @@ package commands
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -324,16 +325,30 @@ func Serve() {
 	var (
 		port        int
 		root        string
+		print       bool
 		ferr        flag.ErrorHandling
 		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
 	)
 	CommandLine.IntVar(&port, "p", 6060, "listen port")
 	CommandLine.StringVar(&root, "d", "./", "document root")
+	CommandLine.BoolVar(&print, "l", false, "print address")
 	err := CommandLine.Parse(os.Args[2:])
 	if err == nil {
 		root, err = utilgo.PathMustHave(root)
 		if err == nil {
-			util.Log.Printf("Starting up on port %d\nDocument root %s", port, root)
+			var (
+				addr string
+				ip   *net.IPNet
+			)
+			if print {
+				ip, err = utilgo.GetCurIpv4()
+				if err == nil {
+					addr = fmt.Sprintf("http://%s:%d", ip.IP.String(), port)
+				}
+			} else {
+				addr = fmt.Sprintf("port %d", port)
+			}
+			util.Log.Printf("Starting up on %s\nDocument root %s", addr, root)
 			err = http.ListenAndServe(":"+strconv.Itoa(port), http.FileServer(http.Dir(root)))
 		}
 	}
