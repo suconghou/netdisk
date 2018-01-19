@@ -428,9 +428,9 @@ func HTTPProxy() {
 	err := CommandLine.Parse(os.Args[2:])
 	if err == nil {
 		if socks != "" {
-			transport, err = util.MakeSocksProxy(socks)
+			transport, err = util.MakeSocksProxy(socks, util.GetTLSConfig())
 		} else if proxy != "" {
-			transport, err = util.MakeHTTPProxy(proxy)
+			transport, err = util.MakeHTTPProxy(proxy, util.GetTLSConfig())
 		}
 		if err == nil {
 			err = tools.HTTPProxy(port, url, transport)
@@ -494,9 +494,9 @@ func Network() {
 	err := CommandLine.Parse(os.Args[2:])
 	if err == nil {
 		if socks != "" {
-			transport, err = util.MakeSocksProxy(socks)
+			transport, err = util.MakeSocksProxy(socks, util.GetTLSConfig())
 		} else if proxy != "" {
-			transport, err = util.MakeHTTPProxy(proxy)
+			transport, err = util.MakeHTTPProxy(proxy, util.GetTLSConfig())
 		}
 		if err == nil {
 			if host == "" {
