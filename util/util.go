@@ -60,7 +60,6 @@ func GetTLSConfig() *tls.Config {
 // GetProxy return http.Transport or nil
 func GetProxy() (*http.Transport, error) {
 	tlsCfg := GetTLSConfig()
-	Log.Println(tlsCfg)
 	if str, err := utilgo.GetParam("--socks"); err == nil {
 		return MakeSocksProxy(str, tlsCfg)
 	}
