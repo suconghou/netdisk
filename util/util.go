@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-var urlReg = regexp.MustCompile(`^(?i:https?)://[[:print:]]{1,500}$`)
+var urlReg = regexp.MustCompile(`^(?i:https?)://[[:print:]]+$`)
 
 // Log is a global logger
 var Log = log.New(os.Stdout, "", 0)
