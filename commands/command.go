@@ -449,6 +449,14 @@ func Nc() {
 	}
 }
 
+// Fwd port forward
+func Fwd() {
+	err := tools.FwdMain()
+	if err != nil {
+		util.Debug.Printf("fwd error:%s", err)
+	}
+}
+
 // Network test http speed
 func Network() {
 	var (

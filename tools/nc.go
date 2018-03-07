@@ -11,8 +11,6 @@ import (
 	"github.com/suconghou/utilgo"
 )
 
-const tcp = "tcp"
-
 type counter struct {
 	startTime time.Time
 	origin    io.ReadWriter
@@ -66,7 +64,7 @@ func NcMain() error {
 	} else if len(os.Args) > 2 && utilgo.IsIPPort(os.Args[2]) {
 		return ncClient(os.Args[2])
 	}
-	return fmt.Errorf("args error")
+	return errArgs
 }
 
 func ncServer(port string) error {
