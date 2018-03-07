@@ -5,12 +5,13 @@ import (
 	"io"
 	"net"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/suconghou/utilgo"
-
-	kcp "github.com/xtaci/kcp-go"
 )
+
+const tcp = "tcp"
 
 type counter struct {
 	startTime time.Time
@@ -56,6 +57,50 @@ func (c *counter) Write(p []byte) (int, error) {
 	c.writed += uint64(n)
 	progress(c.totalr, c.readed, c.totalw, c.writed, time.Since(c.startTime).Seconds())
 	return n, err
+}
+
+// NcMain start
+func NcMain() error {
+	if len(os.Args) > 3 && os.Args[2] == "-l" && utilgo.IsPort(os.Args[3]) {
+		return ncServer(os.Args[3])
+	} else if len(os.Args) > 2 && utilgo.IsIPPort(os.Args[2]) {
+		return ncClient(os.Args[2])
+	}
+	return fmt.Errorf("args error")
+}
+
+func ncServer(port string) error {
+	l, err := net.Listen(tcp, ":"+port)
+	if err != nil {
+		return err
+	}
+	defer l.Close()
+	conn, err := l.Accept()
+	if err != nil {
+		return err
+	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	// con := &counter{origin: conn, startTime: time.Now(), totalw: uint64(10243246)}
+	go func() { io.Copy(conn, os.Stdin); fmt.Fprintf(os.Stderr, "os.Stdin 2 conn done"); wg.Done() }()
+	go func() { io.Copy(os.Stdout, conn); fmt.Fprintf(os.Stderr, "conn 2 os.Stdout done"); wg.Done() }()
+	wg.Wait()
+	conn.Close()
+	return nil
+}
+
+func ncClient(addr string) error {
+	conn, err := net.Dial(tcp, addr)
+	if err != nil {
+		return err
+	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() { io.Copy(conn, os.Stdin); fmt.Fprintf(os.Stderr, "conn 2 os.Stdin done"); wg.Done() }()
+	go func() { io.Copy(os.Stdout, conn); fmt.Fprintf(os.Stderr, "os.Stdout 2 conn done"); wg.Done() }()
+	wg.Wait()
+	conn.Close()
+	return nil
 }
 
 // NcTCP is tcp nc like but with progress bar
@@ -126,51 +171,6 @@ func NcTCP(address string, port int, serve bool, prog bool, act string, arg stri
 		<-p2die
 	case <-p2die:
 		<-p1die
-	}
-	return nil
-}
-
-// Nc1 like but use kcp to transfer data
-func Nc1(address string, port int, act string, arg string) error {
-
-	const (
-		dataShard    = 10
-		parityShard  = 3
-		noDelay      = 1
-		interval     = 20
-		resend       = 2
-		noCongestion = 1
-	)
-	if act == "" {
-		lis, err := kcp.ListenWithOptions(fmt.Sprintf("%s:%d", address, port), nil, dataShard, parityShard)
-		if err != nil {
-			return err
-		}
-		conn, err := lis.AcceptKCP()
-		if err != nil {
-			return err
-		}
-		conn.SetStreamMode(true)
-		conn.SetWriteDelay(true)
-		conn.SetNoDelay(noDelay, interval, resend, noCongestion)
-		conn.SetWindowSize(1024, 1024)
-		conn.SetMtu(1350)
-		conn.SetACKNoDelay(true)
-		if err != nil {
-			return err
-		}
-
-	} else {
-		conn, err := kcp.DialWithOptions(fmt.Sprintf("%s:%d", address, port), nil, dataShard, parityShard)
-		if err != nil {
-			return err
-		}
-		conn.SetStreamMode(true)
-		conn.SetWriteDelay(true)
-		conn.SetNoDelay(noDelay, interval, resend, noCongestion)
-		conn.SetWindowSize(1024, 1024)
-		conn.SetMtu(1350)
-		conn.SetACKNoDelay(true)
 	}
 	return nil
 }

@@ -441,27 +441,9 @@ func HTTPProxy() {
 	}
 }
 
-// Nc like but use kcp to transfer data
+// Nc like but have progress bar
 func Nc() {
-	var (
-		address string
-		port    int
-	)
-	str, err := utilgo.GetParam("-l")
-	if err != nil {
-		port, err = strconv.Atoi(os.Args[3])
-		if err == nil {
-			if len(os.Args) >= 6 {
-				address = os.Args[2]
-				err = tools.NcTCP(address, port, false, true, os.Args[4], os.Args[5])
-			}
-		}
-	} else {
-		port, err = strconv.Atoi(str)
-		if err == nil {
-			err = tools.NcTCP(address, port, true, true, "", "")
-		}
-	}
+	err := tools.NcMain()
 	if err != nil {
 		util.Debug.Printf("nc error:%s", err)
 	}
