@@ -7,6 +7,6 @@ var (
 )
 
 const (
-	tcp = "tcp4"
-	udp = "udp4"
+	tcp = "tcp"
+	udp = "udp"
 )
