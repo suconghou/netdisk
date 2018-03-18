@@ -46,10 +46,10 @@ func ListDir(filePath string, keep bool) error {
 }
 
 // Get file form backend
-func Get(filePath string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64) error {
+func Get(filePath string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, proxy *http.Transport) error {
 	if config.IsPcs() {
 		url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(filePath)
-		return WgetURL(url, saveas, reqHeader, thread, thunk, start, end, nil)
+		return WgetURL(url, saveas, reqHeader, thread, thunk, start, end, proxy)
 	}
 	// 腾讯云 cos
 	return nil

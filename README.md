@@ -223,3 +223,31 @@ it is like nginx reverse proxy , but can work with upstream proxy
 use `-socks` to set an upstream socks5 proxy
 
 which all the proxy request(http/https/socks5) will pass to 
+
+## Network
+
+
+`disk network` test download speed for given url 
+
+`echo http://xxx.com/filepath  | tdisk network -s 0 -t 10`  
+`-s 0` for unlimit filesize
+
+test for ip with one host 
+
+`disk network -host xxx.com -path /filepath`
+
+`-path` begin with `/`
+
+
+## NC 
+
+### the origin tcp nc 
+
+nc host port 
+
+nc -l port
+
+### the kcp version nc 
+
+nc -l port -k
+

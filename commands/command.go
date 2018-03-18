@@ -124,7 +124,12 @@ func Get() {
 			util.Log.Print(err)
 			return
 		}
-		err = fslayer.Get(os.Args[2], saveas, reqHeader, thread, thunk, start, end)
+		transport, err := util.GetProxy()
+		if err != nil {
+			util.Log.Print(err)
+			return
+		}
+		err = fslayer.Get(os.Args[2], saveas, reqHeader, thread, thunk, start, end, transport)
 		if err != nil {
 			util.Log.Print(err)
 		}
