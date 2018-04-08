@@ -80,8 +80,10 @@ func cli() {
 		commands.Sync()
 	case "info":
 		commands.Info()
-	case "hash":
-		commands.Hash("")
+	case "hash", "sha1", "sha1sum":
+		commands.Hash("sha1")
+	case "sha256":
+		commands.Hash("sha256")
 	case "md5", "md5sum":
 		commands.Hash("md5")
 	case "crc32":
