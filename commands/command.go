@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"strconv"
 
+	fastutil "github.com/suconghou/fastload/util"
 	"github.com/suconghou/netdisk/config"
 	"github.com/suconghou/netdisk/layers/fslayer"
-	"github.com/suconghou/netdisk/layers/netlayer"
 	"github.com/suconghou/netdisk/middleware"
 	"github.com/suconghou/netdisk/tools"
 	"github.com/suconghou/netdisk/util"
@@ -117,8 +117,8 @@ func Rm() {
 // Get do a simple download
 func Get() {
 	if len(os.Args) >= 3 && !util.IsURL(os.Args[2]) {
-		reqHeader := netlayer.ParseCookieUaRefer()
-		thread, thunk, start, end := netlayer.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
+		reqHeader := fastutil.ParseCookieUaRefer()
+		thread, thunk, start, end := fastutil.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
 		saveas, err := utilgo.GetStorePath(os.Args[2])
 		if err != nil {
 			util.Log.Print(err)
@@ -170,8 +170,8 @@ func Put() {
 func Wget() {
 	if len(os.Args) >= 3 && util.IsURL(os.Args[2]) {
 		var (
-			reqHeader                 = netlayer.ParseCookieUaRefer()
-			thread, thunk, start, end = netlayer.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
+			reqHeader                 = fastutil.ParseCookieUaRefer()
+			thread, thunk, start, end = fastutil.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
 			saveas, err               = utilgo.GetStorePath(os.Args[2])
 		)
 		if err != nil {
@@ -199,8 +199,8 @@ func Play() {
 			saveas                    string
 			err                       error
 			stdout                    = utilgo.HasFlag("--stdout")
-			reqHeader                 = netlayer.ParseCookieUaRefer()
-			thread, thunk, start, end = netlayer.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
+			reqHeader                 = fastutil.ParseCookieUaRefer()
+			thread, thunk, start, end = fastutil.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
 		)
 		saveas, err = utilgo.GetStorePath(os.Args[2])
 		if err != nil && !stdout {
