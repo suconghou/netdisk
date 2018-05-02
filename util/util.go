@@ -6,13 +6,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 
 	"github.com/suconghou/utilgo"
 	"golang.org/x/net/proxy"
 )
-
-var urlReg = regexp.MustCompile(`^(?i:https?)://[[:print:]]+$`)
 
 // Log is a global logger
 var Log = log.New(os.Stdout, "", 0)
@@ -70,28 +67,4 @@ func GetProxy() (*http.Transport, error) {
 		return &http.Transport{TLSClientConfig: tlsCfg}, nil
 	}
 	return nil, nil
-}
-
-// IsURL if the given string is an url
-func IsURL(url string) bool {
-	return urlReg.MatchString(url)
-}
-
-// GetMirrors return url mirrors
-func GetMirrors() map[string]int {
-	found := false
-	var mirrors = map[string]int{}
-	for _, item := range os.Args {
-		if !found {
-			if item == "--mirrors" {
-				found = true
-			}
-		} else if IsURL(item) {
-			mirrors[item] = 1
-		}
-	}
-	if len(mirrors) > 0 {
-		return mirrors
-	}
-	return nil
 }

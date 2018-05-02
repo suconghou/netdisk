@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	fastutil "github.com/suconghou/fastload/util"
 	"github.com/suconghou/netdisk/config"
 	"github.com/suconghou/netdisk/layers/fslayer"
 	"github.com/suconghou/netdisk/middleware"
@@ -116,9 +115,7 @@ func Rm() {
 
 // Get do a simple download
 func Get() {
-	if len(os.Args) >= 3 && !util.IsURL(os.Args[2]) {
-		reqHeader := fastutil.ParseCookieUaRefer()
-		thread, thunk, start, end := fastutil.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
+	if len(os.Args) >= 3 && !utilgo.IsURL(os.Args[2], true) {
 		saveas, err := utilgo.GetStorePath(os.Args[2])
 		if err != nil {
 			util.Log.Print(err)
@@ -129,7 +126,7 @@ func Get() {
 			util.Log.Print(err)
 			return
 		}
-		err = fslayer.Get(os.Args[2], saveas, reqHeader, thread, thunk, start, end, transport)
+		err = fslayer.Get(os.Args[2], saveas, transport)
 		if err != nil {
 			util.Log.Print(err)
 		}
@@ -168,11 +165,9 @@ func Put() {
 
 // Wget url like wget
 func Wget() {
-	if len(os.Args) >= 3 && util.IsURL(os.Args[2]) {
+	if len(os.Args) >= 3 && utilgo.IsURL(os.Args[2], true) {
 		var (
-			reqHeader                 = fastutil.ParseCookieUaRefer()
-			thread, thunk, start, end = fastutil.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
-			saveas, err               = utilgo.GetStorePath(os.Args[2])
+			saveas, err = utilgo.GetStorePath(os.Args[2])
 		)
 		if err != nil {
 			util.Log.Print(err)
@@ -183,7 +178,7 @@ func Wget() {
 			util.Log.Print(err)
 			return
 		}
-		err = fslayer.WgetURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, transport)
+		err = fslayer.WgetURL(os.Args[2], saveas, transport)
 		if err != nil {
 			util.Log.Print(err)
 		}
@@ -196,33 +191,31 @@ func Wget() {
 func Play() {
 	if len(os.Args) >= 3 {
 		var (
-			saveas                    string
-			err                       error
-			stdout                    = utilgo.HasFlag("--stdout")
-			reqHeader                 = fastutil.ParseCookieUaRefer()
-			thread, thunk, start, end = fastutil.ParseThreadThunkStartEnd(8, 2097152, -1, 0)
+			saveas string
+			err    error
+			stdout = utilgo.HasFlag("--stdout")
 		)
-		saveas, err = utilgo.GetStorePath(os.Args[2])
-		if err != nil && !stdout {
-			util.Log.Print(err)
-			return
-		}
 		if stdout {
 			util.Log.SetOutput(os.Stderr)
 		}
+		saveas, err = utilgo.GetStorePath(os.Args[2])
+		if err != nil {
+			util.Log.Print(err)
+			return
+		}
+		transport, err := util.GetProxy()
+		if err != nil {
+			util.Log.Print(err)
+			return
+		}
 		util.Log.Print("Playing " + saveas)
-		if util.IsURL(os.Args[2]) {
-			transport, err := util.GetProxy()
-			if err != nil {
-				util.Log.Print(err)
-				return
-			}
-			err = fslayer.PlayURL(os.Args[2], saveas, reqHeader, thread, thunk, start, end, stdout, transport)
+		if utilgo.IsURL(os.Args[2], true) {
+			err = fslayer.PlayURL(os.Args[2], saveas, stdout, transport)
 			if err != nil {
 				util.Log.Print(err)
 			}
 		} else {
-			err = fslayer.Play(os.Args[2], saveas, reqHeader, thread, thunk, start, end, stdout)
+			err = fslayer.Play(os.Args[2], saveas, stdout, transport)
 			if err != nil {
 				util.Log.Print(err)
 			}

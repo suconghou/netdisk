@@ -1,15 +1,13 @@
 package fslayer
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"os"
 
-	"github.com/suconghou/fastload/fastload"
+	"github.com/suconghou/fastload/fastloader"
 	"github.com/suconghou/netdisk/config"
 	"github.com/suconghou/netdisk/layers/baidudisk"
-	"github.com/suconghou/netdisk/util"
 	"github.com/suconghou/utilgo"
 )
 
@@ -46,131 +44,60 @@ func ListDir(filePath string, keep bool) error {
 }
 
 // Get file form backend
-func Get(filePath string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, proxy *http.Transport) error {
+func Get(filePath string, saveas string, transport *http.Transport) error {
 	if config.IsPcs() {
 		url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(filePath)
-		return WgetURL(url, saveas, reqHeader, thread, thunk, start, end, proxy)
+		return WgetURL(url, saveas, transport)
 	}
 	// 腾讯云 cos
 	return nil
 }
 
 // WgetURL download a url file
-func WgetURL(url string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, proxy *http.Transport) error {
-	var (
-		logger      io.Writer
-		startstr    string
-		thunkstr    string
-		showsizestr string
-	)
-	file, cstart, err := utilgo.GetContinue(saveas)
+func WgetURL(url string, saveas string, transport *http.Transport) error {
+	file, fstart, err := utilgo.GetContinue(saveas)
+	if err != nil {
+		return err
+	}
 	defer file.Close()
-	if err != nil {
-		return err
-	}
-	if start == -1 {
-		start = cstart
-	}
-	if os.Getenv("debug") != "" {
-		logger = os.Stderr
-	}
-	mirrors := util.GetMirrors()
-	loader := fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar("", "", nil, nil), proxy, logger)
-	body, _, total, filesize, thread, err := loader.Load(start, end, int64(32+len(mirrors)*2), mirrors)
-	if err != nil {
-		if err == io.EOF {
-			return fmt.Errorf("该文件已经下载完毕")
-		}
-		return err
-	}
-	if start != 0 || end != 0 {
-		startstr = fmt.Sprintf(",%d-%d", start, end)
-	}
-	if thread > 1 {
-		thunkstr = fmt.Sprintf(",分块%dKB", thunk/1024)
-	}
-	if total > 0 && filesize > 0 {
-		showsizestr = fmt.Sprintf(",大小%s/%s(%d/%d)", utilgo.ByteFormat(uint64(total)), utilgo.ByteFormat(uint64(filesize)), total, filesize)
-	}
-	util.Log.Printf("%s\n线程%d%s%s%s", file.Name(), thread, thunkstr, showsizestr, startstr)
-	n, err := io.Copy(file, body)
-	defer body.Close()
-	if err != nil {
-		return err
-	}
-	util.Log.Printf("\n下载完毕,%d%s", n, utilgo.BoolString(total > 0, fmt.Sprintf("/%d", total), ""))
-	return nil
+	return fastloader.Load(file, url, fstart, transport, os.Stdout, nil)
 }
 
 // Play play a backend file
-func Play(filePath string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, stdout bool) error {
+func Play(filePath string, saveas string, stdout bool, transport *http.Transport) error {
 	if config.IsPcs() {
 		url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(filePath)
-		return PlayURL(url, saveas, reqHeader, thread, thunk, start, end, stdout, nil)
+		return PlayURL(url, saveas, stdout, transport)
 	}
 	return nil
 }
 
 // PlayURL play a url media
-func PlayURL(url string, saveas string, reqHeader http.Header, thread int32, thunk int64, start int64, end int64, stdout bool, proxy *http.Transport) error {
+func PlayURL(url string, saveas string, stdout bool, transport *http.Transport) error {
 	var (
-		loader      *fastload.Fastloader
-		file        *os.File
-		err         error
-		cstart      int64
-		player      bool
-		startstr    string
-		thunkstr    string
-		showsizestr string
+		file   *os.File
+		err    error
+		fstart int64
+		player bool
+		writer io.Writer = os.Stderr
+		hook   func(loaded float64, speed float64, remain float64)
 	)
 	if stdout {
-		if start == -1 {
-			start = utilgo.HasFileSize(saveas)
-		}
 		file = os.Stdout
-		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar("", "", nil, os.Stderr), proxy, nil)
 	} else {
-		file, cstart, err = utilgo.GetContinue(saveas)
+		file, fstart, err = utilgo.GetContinue(saveas)
 		if err != nil {
 			return err
 		}
-		if start == -1 {
-			start = cstart
-		}
-		hook := func(loaded float64, speed float64, remain float64) {
+		hook = func(loaded float64, speed float64, remain float64) {
 			if loaded > 2 && !player {
 				utilgo.CallPlayer(saveas)
 				player = true
 			}
 		}
-		loader = fastload.NewLoader(url, thread, thunk, reqHeader, utilgo.ProgressBar("", "", hook, nil), proxy, nil)
 	}
 	defer file.Close()
-	mirrors := util.GetMirrors()
-	body, _, total, filesize, thread, err := loader.Load(start, end, int64(32+len(mirrors)*2), mirrors)
-	if err != nil {
-		if err == io.EOF {
-			return fmt.Errorf("该文件已经下载完毕")
-		}
-		return err
-	}
-	if start != 0 || end != 0 {
-		startstr = fmt.Sprintf(",%d-%d", start, end)
-	}
-	if thread > 1 {
-		thunkstr = fmt.Sprintf(",分块%dKB", thunk/1024)
-	}
-	if total > 0 && filesize > 0 {
-		showsizestr = fmt.Sprintf(",大小%s/%s(%d/%d)", utilgo.ByteFormat(uint64(total)), utilgo.ByteFormat(uint64(filesize)), total, filesize)
-	}
-	util.Log.Printf("%s\n线程%d%s%s%s", file.Name(), thread, thunkstr, showsizestr, startstr)
-	n, err := io.Copy(file, body)
-	defer body.Close()
-	if err != nil {
-		return err
-	}
-	util.Log.Printf("\n下载完毕,%d%s", n, utilgo.BoolString(total > 0, fmt.Sprintf("/%d", total), ""))
-	return nil
+	return fastloader.Load(file, url, fstart, transport, writer, hook)
 }
 
 // GetFileInfo print file info

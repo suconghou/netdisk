@@ -180,7 +180,7 @@ func fallback(w http.ResponseWriter, r *http.Request) {
 		files = []string{r.URL.Path, path.Join(r.URL.Path, index)}
 	}
 	if !tryFiles(files, w, r) {
-		if utilgo.IsURL(r.RequestURI) {
+		if utilgo.IsURL(r.RequestURI, true) {
 			middleware.Proxy(w, r)
 		} else {
 			http.NotFound(w, r)
