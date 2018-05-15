@@ -247,20 +247,25 @@ func Info() {
 
 // Hash print the sha1sum sha256sum
 func Hash(t string) {
-	if len(os.Args) >= 3 {
-		file, err := utilgo.GetOpenFile(os.Args[2])
-		if err == nil {
-			defer file.Close()
-			if t == "" {
-				t, _ = utilgo.GetParam("-t")
-			}
-			x, err := utilgo.GetFileHash(file, t)
+	var (
+		l    = len(os.Args)
+		err  error
+		file *os.File
+		x    []byte
+	)
+	if l >= 3 {
+		for i := 2; i < l; i++ {
+			file, err = utilgo.GetOpenFile(os.Args[i])
 			if err == nil {
-				util.Log.Printf("%x  %s", x, filepath.Base(file.Name()))
+				x, err = utilgo.GetFileHash(file, t)
+				file.Close()
+				if err == nil {
+					util.Log.Printf("%x  %s", x, filepath.Base(file.Name()))
+				}
 			}
-		}
-		if err != nil {
-			util.Log.Print(err)
+			if err != nil {
+				util.Log.Print(err)
+			}
 		}
 	} else {
 		util.Log.Print("Usage:disk hash file")
