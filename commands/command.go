@@ -420,6 +420,7 @@ func HTTPProxy() {
 		url         string
 		proxy       string
 		socks       string
+		header      string
 		ferr        flag.ErrorHandling
 		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
 		transport   *http.Transport
@@ -428,6 +429,7 @@ func HTTPProxy() {
 	CommandLine.StringVar(&url, "u", "http://127.0.0.1:8080", "reverse url")
 	CommandLine.StringVar(&proxy, "proxy", "", "http proxy")
 	CommandLine.StringVar(&socks, "socks", "", "socks proxy")
+	CommandLine.StringVar(&header, "header", "", "allow headers")
 	err := CommandLine.Parse(os.Args[2:])
 	if err == nil {
 		if socks != "" {
@@ -436,7 +438,7 @@ func HTTPProxy() {
 			transport, err = util.MakeHTTPProxy(proxy, util.GetTLSConfig())
 		}
 		if err == nil {
-			err = tools.HTTPProxy(port, url, transport)
+			err = tools.HTTPProxy(port, url, transport, header)
 		}
 	}
 	if err != nil {

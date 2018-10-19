@@ -10,8 +10,7 @@ import (
 )
 
 // HTTPProxy nginx like reverse proxy
-func HTTPProxy(port int, url string, transport *http.Transport) error {
-	str := "Range,X-OAUTH-TOKEN,Cache-Control,Pragma,reqid,nid,host,x-real-ip,x-forwarded-ip,event-type,event-id,accept,content-type"
+func HTTPProxy(port int, url string, transport *http.Transport, str string) error {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "OPTIONS" {
 			utilgo.CrossShare(w.Header(), r.Header, str)
