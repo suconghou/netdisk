@@ -60,7 +60,7 @@ func WgetURL(url string, saveas string, transport *http.Transport) error {
 		return err
 	}
 	defer file.Close()
-	return fastloader.Load(file, url, fstart, transport, os.Stdout, nil)
+	return fastloader.Load(file, map[string]int{url: 1}, 8, 1048576, fstart, 0, nil, transport, os.Stdout, nil)
 }
 
 // Play play a backend file
@@ -97,7 +97,7 @@ func PlayURL(url string, saveas string, stdout bool, transport *http.Transport) 
 		}
 	}
 	defer file.Close()
-	return fastloader.Load(file, url, fstart, transport, writer, hook)
+	return fastloader.Load(file, map[string]int{url: 1}, 8, 1048576, fstart, 0, nil, transport, writer, hook)
 }
 
 // GetFileInfo print file info

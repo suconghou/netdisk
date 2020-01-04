@@ -3,8 +3,6 @@ package middleware
 import (
 	"net/http"
 	"regexp"
-
-	"github.com/suconghou/utilgo"
 )
 
 var (
@@ -23,13 +21,12 @@ type routeInfo struct {
 	Handler func(http.ResponseWriter, *http.Request, []string)
 }
 
-var usecachefilter = func(out http.Header, res *http.Response) int {
+var usecachefilter = func(out *http.Header, res *http.Header, status int) int {
 	out.Del("Set-Cookie")
 	out.Del("Content-Disposition")
 	out.Set("Access-Control-Allow-Origin", "*")
 	out.Set("Access-Control-Allow-Headers", "Range, Origin, X-Requested-With, Content-Type, Content-Length, Accept, Accept-Encoding, Cache-Control, Expires")
-	utilgo.UseHTTPCache(out, 604800)
-	return res.StatusCode
+	return status
 }
 
 func dispatch(w http.ResponseWriter, r *http.Request, match []string, route []routeInfo, fallback func(w http.ResponseWriter, r *http.Request, match []string)) {

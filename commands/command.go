@@ -148,8 +148,8 @@ func Put() {
 		if fileName != "-" {
 			file, err = utilgo.GetOpenFile(fileName)
 		}
-		overwrite = utilgo.HasFlag("-f")
-		saveName, _ := utilgo.GetParam("-f")
+		overwrite = utilgo.HasFlag(os.Args, "-f")
+		saveName, _ := utilgo.GetParam(os.Args, "-f")
 		if saveName != "" {
 			fileName = saveName
 		}
@@ -193,7 +193,7 @@ func Play() {
 		var (
 			saveas string
 			err    error
-			stdout = utilgo.HasFlag("--stdout")
+			stdout = utilgo.HasFlag(os.Args, "--stdout")
 		)
 		if stdout {
 			util.Log.SetOutput(os.Stderr)
@@ -233,7 +233,7 @@ func Sync() {
 // Info print the backend info or file info
 func Info() {
 	if len(os.Args) >= 3 {
-		err := fslayer.GetFileInfo(os.Args[2], utilgo.HasFlag("--link"))
+		err := fslayer.GetFileInfo(os.Args[2], utilgo.HasFlag(os.Args, "--link"))
 		if err != nil {
 			util.Log.Print(err)
 		}

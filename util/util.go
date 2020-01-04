@@ -46,7 +46,7 @@ func MakeHTTPProxy(str string, tlsCfg *tls.Config) (*http.Transport, error) {
 func GetTLSConfig() *tls.Config {
 	var (
 		tlsCfg     *tls.Config
-		skipVerify = utilgo.HasFlag("--no-check-certificate")
+		skipVerify = utilgo.HasFlag(os.Args, "--no-check-certificate")
 	)
 	if skipVerify {
 		tlsCfg = &tls.Config{InsecureSkipVerify: true}
@@ -57,10 +57,10 @@ func GetTLSConfig() *tls.Config {
 // GetProxy return http.Transport or nil
 func GetProxy() (*http.Transport, error) {
 	tlsCfg := GetTLSConfig()
-	if str, err := utilgo.GetParam("--socks"); err == nil {
+	if str, err := utilgo.GetParam(os.Args, "--socks"); err == nil {
 		return MakeSocksProxy(str, tlsCfg)
 	}
-	if str, err := utilgo.GetParam("--proxy"); err == nil {
+	if str, err := utilgo.GetParam(os.Args, "--proxy"); err == nil {
 		return MakeHTTPProxy(str, tlsCfg)
 	}
 	if tlsCfg != nil {

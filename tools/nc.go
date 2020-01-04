@@ -62,7 +62,7 @@ func (c *tcpCounter) Write(p []byte) (int, error) {
 
 // NcMain start
 func NcMain() error {
-	progress := utilgo.HasFlag("-v")
+	progress := utilgo.HasFlag(os.Args, "-v")
 	if len(os.Args) > 3 && os.Args[2] == "-l" && utilgo.IsPort(os.Args[3]) {
 		return ncServer(os.Args[3], progress)
 	} else if len(os.Args) > 2 && utilgo.IsIPPort(os.Args[2]) {

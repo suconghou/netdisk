@@ -1,13 +1,9 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"regexp"
-
-	"github.com/suconghou/fastload/fastload"
-	"github.com/suconghou/utilgo"
-	"github.com/suconghou/youtubeVideoParser"
+	// "github.com/suconghou/youtubeVideoParser"
 )
 
 var mediaroute = []routeInfo{
@@ -24,39 +20,39 @@ func MediaStreamAPI(w http.ResponseWriter, r *http.Request, match []string) {
 }
 
 func youtubeVideo(w http.ResponseWriter, r *http.Request, match []string) {
-	quality, id, ext := match[1], match[2], match[3]
-	if ext == "json" {
-		bs, err := youtubeVideoParser.GetYoutubeVideoInfo(id)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		utilgo.JSONPut(w, bs, true, 86400)
-	} else {
-		if url, err := youtubeVideoParser.GetYoutubeVideoURL(id, ext, quality); err == nil {
-			fastload.Pipe(w, r, url, usecachefilter, 30, nil)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	}
+	// quality, id, ext := match[1], match[2], match[3]
+	// if ext == "json" {
+	// 	bs, err := youtubeVideoParser.GetYoutubeVideoInfo(id)
+	// 	if err != nil {
+	// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 		return
+	// 	}
+	// 	utilgo.JSONPut(w, bs, true, 86400)
+	// } else {
+	// 	if url, err := youtubeVideoParser.GetYoutubeVideoURL(id, ext, quality); err == nil {
+	// 		fastload.Pipe(w, r, url, usecachefilter, 30, nil)
+	// 	} else {
+	// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	}
+	// }
 }
 
 func youtubeVideoItag(w http.ResponseWriter, r *http.Request, match []string) {
-	id, itag := match[1], match[2]
-	info, err := youtubeVideoParser.Parse(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if v, ok := info.Streams[itag]; ok {
-		fastload.Pipe(w, r, v.URL, usecachefilter, 30, nil)
-	} else {
-		http.Error(w, fmt.Sprintf("itag %s for %s not found", itag, id), http.StatusNotFound)
-	}
+	// id, itag := match[1], match[2]
+	// info, err := youtubeVideoParser.Parse(id)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	// if v, ok := info.Streams[itag]; ok {
+	// 	fastload.Pipe(w, r, v.URL, usecachefilter, 30, nil)
+	// } else {
+	// 	http.Error(w, fmt.Sprintf("itag %s for %s not found", itag, id), http.StatusNotFound)
+	// }
 }
 
 func youtubeImage(w http.ResponseWriter, r *http.Request, match []string) {
-	quality, id, ext := match[1], match[2], match[3]
-	url := youtubeVideoParser.GetYoutubeImageURL(id, ext, quality)
-	fastload.Pipe(w, r, url, usecachefilter, 30, nil)
+	// quality, id, ext := match[1], match[2], match[3]
+	// url := youtubeVideoParser.GetYoutubeImageURL(id, ext, quality)
+	// fastload.Pipe(w, r, url, usecachefilter, 30, nil)
 }

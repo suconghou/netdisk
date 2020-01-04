@@ -18,10 +18,9 @@ func HTTPProxy(port int, url string, transport *http.Transport, str string) erro
 			return
 		}
 		requ := fmt.Sprintf("%s%s", url, r.RequestURI)
-		fastload.Pipe(w, r, requ, func(out http.Header, res *http.Response) int {
-			utilgo.CrossShare(out, r.Header, str)
-			util.Log.Printf("%d %s %s", res.StatusCode, r.Method, requ)
-			return res.StatusCode
+		fastload.Pipe(w, r, requ, func(out *http.Header, res *http.Header, status int) int {
+			util.Log.Printf("%d %s %s", status, r.Method, requ)
+			return status
 		}, 60, transport)
 	})
 	util.Log.Printf("Starting up on port %d\nProxy %s", port, url)

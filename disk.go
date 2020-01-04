@@ -204,12 +204,12 @@ func tryFiles(files []string, w http.ResponseWriter, r *http.Request) bool {
 func configs(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Auth") == os.Getenv("AUTH") {
 		token := r.Header.Get("Token")
-		if r.Method == "GET" {
+		if r.Method == http.MethodGet {
 			h := w.Header()
 			if token != "" {
 				h.Add("Token", config.Cfg.Pcs.Token)
 			}
-		} else if r.Method == "POST" {
+		} else if r.Method == http.MethodPost {
 			if token != "" {
 				config.Cfg.Pcs.Token = token
 			}
