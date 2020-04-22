@@ -23,9 +23,6 @@ type routeInfo struct {
 // RoutePath defines all routes
 var RoutePath = []routeInfo{
 	{regexp.MustCompile(`^/apiv1/(.+)$`), serveHTTP(apiv1)},
-	{regexp.MustCompile(`^/files/(.+)$`), middleware.Files},
-	{regexp.MustCompile(`^/imgs/(.+)$`), middleware.Imgs},
-	{regexp.MustCompile(`^/play/(.+)$`), middleware.MediaStreamAPI},
 	{regexp.MustCompile(`^/net/(.+)$`), middleware.NetStreamAPI},
 	{regexp.MustCompile(`^/(?:(https?):/?)?(?:[\w\-]+\.)+[\w\-]+(?::\d+)?/.*$`), middleware.Pipe},
 }

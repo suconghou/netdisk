@@ -19,6 +19,8 @@ func HTTPProxy(port int, url string, transport *http.Transport, str string) erro
 		}
 		requ := fmt.Sprintf("%s%s", url, r.RequestURI)
 		fastload.Pipe(w, r, requ, func(out *http.Header, res *http.Header, status int) int {
+			w.Header().Set("Cache-Control", "public, max-age=604800")
+			utilgo.CrossShare(w.Header(), r.Header, str)
 			util.Log.Printf("%d %s %s", status, r.Method, requ)
 			return status
 		}, 60, transport)
