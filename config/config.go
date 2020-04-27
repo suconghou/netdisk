@@ -70,8 +70,3 @@ func Use(driver string) error {
 	Cfg.Save()
 	return nil
 }
-
-// List print its config
-func List() {
-
-}

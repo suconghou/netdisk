@@ -18,7 +18,7 @@ var (
 
 type routeInfo struct {
 	Reg     *regexp.Regexp
-	Handler func(http.ResponseWriter, *http.Request, []string)
+	Handler func(http.ResponseWriter, *http.Request, []string) error
 }
 
 var usecachefilter = func(out *http.Header, res *http.Header, status int) int {
@@ -29,19 +29,14 @@ var usecachefilter = func(out *http.Header, res *http.Header, status int) int {
 	return status
 }
 
-func dispatch(w http.ResponseWriter, r *http.Request, match []string, route []routeInfo, fallback func(w http.ResponseWriter, r *http.Request, match []string)) {
+func dispatch(w http.ResponseWriter, r *http.Request, match []string, route []routeInfo, fallback func(w http.ResponseWriter, r *http.Request, match []string) error) error {
 	uri := match[1]
-	found := false
 	for _, p := range route {
 		if p.Reg.MatchString(uri) {
-			found = true
-			p.Handler(w, r, p.Reg.FindStringSubmatch(uri))
-			break
+			return p.Handler(w, r, p.Reg.FindStringSubmatch(uri))
 		}
 	}
-	if !found {
-		fallback(w, r, match)
-	}
+	return fallback(w, r, match)
 }
 
 func cleanHeader(r *http.Request, headers []string) *http.Request {

@@ -16,7 +16,7 @@ import (
 )
 
 // Pipe response stream
-func Pipe(w http.ResponseWriter, r *http.Request, match []string) {
+func Pipe(w http.ResponseWriter, r *http.Request, match []string) error {
 	var url string
 	if match[1] == "" {
 		url = fmt.Sprintf("http:/%s", match[0])
@@ -26,10 +26,7 @@ func Pipe(w http.ResponseWriter, r *http.Request, match []string) {
 	if r.URL.RawQuery != "" {
 		url = url + "?" + r.URL.RawQuery
 	}
-	_, err := fastload.Pipe(w, cleanHeader(r, xheaders), url, usecachefilter, 3600, nil)
-	if err != nil {
-		util.Log.Printf("pipe %s error:%s", url, err)
-	}
+	return util.ProxyURL(w, r, url, nil)
 }
 
 // Proxy is a http_proxy and just http_proxy server

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/suconghou/fastload/fastload"
 	"github.com/suconghou/netdisk/config"
 	"github.com/suconghou/netdisk/layers/baidudisk"
+	"github.com/suconghou/netdisk/util"
 )
 
 var netroute = []routeInfo{
@@ -15,26 +15,26 @@ var netroute = []routeInfo{
 }
 
 // NetStreamAPI response json data
-func NetStreamAPI(w http.ResponseWriter, r *http.Request, match []string) {
-	dispatch(w, r, match, netroute, func(w http.ResponseWriter, r *http.Request, match []string) {
-		get(w, r, match)
+func NetStreamAPI(w http.ResponseWriter, r *http.Request, match []string) error {
+	return dispatch(w, r, match, netroute, func(w http.ResponseWriter, r *http.Request, match []string) error {
+		return get(w, r, match)
 	})
 }
 
-func ls(w http.ResponseWriter, r *http.Request, match []string) {
+func ls(w http.ResponseWriter, r *http.Request, match []string) error {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).APILsURL(file)
-	fastload.Pipe(w, cleanHeader(r, xheaders), url, usecachefilter, 30, nil)
+	return util.ProxyURL(w, r, url, nil)
 }
 
-func info(w http.ResponseWriter, r *http.Request, match []string) {
+func info(w http.ResponseWriter, r *http.Request, match []string) error {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).APIFileInfoURL(file)
-	fastload.Pipe(w, cleanHeader(r, xheaders), url, usecachefilter, 30, nil)
+	return util.ProxyURL(w, r, url, nil)
 }
 
-func get(w http.ResponseWriter, r *http.Request, match []string) {
+func get(w http.ResponseWriter, r *http.Request, match []string) error {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(file)
-	fastload.FastPipe(w, cleanHeader(r, xheaders), map[string]int{url: 1}, 2, 262144, usecachefilter, nil)
+	return util.ProxyURL(w, r, url, nil)
 }

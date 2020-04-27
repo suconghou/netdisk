@@ -92,8 +92,6 @@ func cli() {
 		commands.Play()
 	case "help":
 		commands.Help()
-	case "config":
-		commands.Config()
 	case "task":
 		commands.Task()
 	case "search":
@@ -161,17 +159,15 @@ func status(w http.ResponseWriter, r *http.Request) {
 }
 
 func routeMatch(w http.ResponseWriter, r *http.Request) {
-	found := false
 	for _, p := range route.RoutePath {
 		if p.Reg.MatchString(r.URL.Path) {
-			found = true
-			p.Handler(w, r, p.Reg.FindStringSubmatch(r.URL.Path))
-			break
+			if err := p.Handler(w, r, p.Reg.FindStringSubmatch(r.URL.Path)); err != nil {
+				util.Log.Print(err)
+			}
+			return
 		}
 	}
-	if !found {
-		fallback(w, r)
-	}
+	fallback(w, r)
 }
 
 func fallback(w http.ResponseWriter, r *http.Request) {
@@ -180,7 +176,6 @@ func fallback(w http.ResponseWriter, r *http.Request) {
 		files = []string{r.URL.Path, path.Join(r.URL.Path, index)}
 	}
 	if !tryFiles(files, w, r) {
-		fmt.Println(r.RequestURI, utilgo.IsURL(r.RequestURI, true))
 		if utilgo.IsURL(r.RequestURI, true) {
 			middleware.Proxy(w, r)
 		} else {

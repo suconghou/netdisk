@@ -20,7 +20,7 @@ const (
 func FwdMain() error {
 	if len(os.Args) > 3 {
 		if utilgo.IsIPPort(os.Args[2]) && utilgo.IsIPPort(os.Args[3]) {
-			proto := utilgo.BoolString(utilgo.HasFlag(os.Args, "-u"), udp, tcp)
+			proto := utilgo.BoolString(utilgo.HasFlag(os.Args, "-u"), "udp", "tcp")
 			l, err := net.Listen(proto, os.Args[2])
 			if err != nil {
 				return err
@@ -34,7 +34,7 @@ func FwdMain() error {
 			}
 		}
 	}
-	return errArgs
+	return fmt.Errorf("args error")
 }
 
 func streamCopy(conn net.Conn, remote string, proto string) {

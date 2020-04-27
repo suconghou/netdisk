@@ -68,11 +68,11 @@ func NcMain() error {
 	} else if len(os.Args) > 2 && utilgo.IsIPPort(os.Args[2]) {
 		return ncClient(os.Args[2], progress)
 	}
-	return errArgs
+	return fmt.Errorf("args error")
 }
 
 func ncServer(port string, progress bool) error {
-	l, err := net.Listen(tcp, ":"+port)
+	l, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func ncServer(port string, progress bool) error {
 }
 
 func ncClient(addr string, progress bool) error {
-	conn, err := net.Dial(tcp, addr)
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return err
 	}

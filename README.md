@@ -238,16 +238,3 @@ test for ip with one host
 
 `-path` begin with `/`
 
-
-## NC 
-
-### the origin tcp nc 
-
-nc host port 
-
-nc -l port
-
-### the kcp version nc 
-
-nc -l port -k
-
