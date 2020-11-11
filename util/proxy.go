@@ -9,7 +9,8 @@ import (
 var (
 	client = &http.Client{Timeout: time.Minute}
 
-	fwdHeaders = []string{
+	// FwdHeaders client headers
+	FwdHeaders = []string{
 		"User-Agent",
 		"Accept",
 		"Accept-Encoding",
@@ -20,7 +21,8 @@ var (
 		"Content-Length",
 		"Content-Type",
 	}
-	exposeHeaders = []string{
+	// ExposeHeaders to client
+	ExposeHeaders = []string{
 		"Accept-Ranges",
 		"Content-Range",
 		"Content-Length",
@@ -44,7 +46,7 @@ func ProxyURL(w http.ResponseWriter, r *http.Request, target string, headers htt
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return err
 	}
-	req.Header = copyHeader(r.Header, reqHeader, fwdHeaders)
+	req.Header = CopyHeader(r.Header, reqHeader, FwdHeaders)
 	resp, err := client.Do(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -52,7 +54,7 @@ func ProxyURL(w http.ResponseWriter, r *http.Request, target string, headers htt
 	}
 	defer resp.Body.Close()
 	to := w.Header()
-	copyHeader(resp.Header, to, exposeHeaders)
+	CopyHeader(resp.Header, to, ExposeHeaders)
 	for k, v := range headers {
 		if k != "" && len(v) == 1 {
 			to.Set(k, v[0])
@@ -63,7 +65,8 @@ func ProxyURL(w http.ResponseWriter, r *http.Request, target string, headers htt
 	return err
 }
 
-func copyHeader(from http.Header, to http.Header, headers []string) http.Header {
+// CopyHeader copy certain
+func CopyHeader(from http.Header, to http.Header, headers []string) http.Header {
 	for _, k := range headers {
 		if v := from.Get(k); v != "" {
 			to.Set(k, v)

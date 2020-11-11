@@ -453,7 +453,7 @@ func Fwd() {
 // Network test http speed
 func Network() {
 	var (
-		thunk       uint
+		chunk       uint
 		timeout     uint
 		input       string
 		proxy       string
@@ -465,7 +465,7 @@ func Network() {
 		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
 		transport   *http.Transport
 	)
-	CommandLine.UintVar(&thunk, "s", 256, "thunk size")
+	CommandLine.UintVar(&chunk, "s", 256, "chunk size")
 	CommandLine.UintVar(&timeout, "t", 15, "timeout")
 	CommandLine.StringVar(&input, "i", "-", "input file")
 	CommandLine.StringVar(&proxy, "proxy", "", "http proxy")
@@ -483,9 +483,9 @@ func Network() {
 		}
 		if err == nil {
 			if host == "" {
-				err = tools.SpeedTest(input, thunk, timeout, transport)
+				err = tools.SpeedTest(input, chunk, timeout, transport)
 			} else {
-				err = tools.SpeedTestWithHost(input, host, path, https, thunk, timeout, transport)
+				err = tools.SpeedTestWithHost(input, host, path, https, chunk, timeout, transport)
 			}
 		}
 	}

@@ -31,8 +31,7 @@ func MakeSocksProxy(str string, tlsCfg *tls.Config) (*http.Transport, error) {
 
 // MakeHTTPProxy return http proxy Transport
 func MakeHTTPProxy(str string, tlsCfg *tls.Config) (*http.Transport, error) {
-	urli := url.URL{}
-	urlproxy, err := urli.Parse(str)
+	urlproxy, err := url.Parse(str)
 	if err == nil {
 		if tlsCfg != nil {
 			return &http.Transport{Proxy: http.ProxyURL(urlproxy), TLSClientConfig: tlsCfg}, nil

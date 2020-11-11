@@ -122,9 +122,9 @@ disk wget url --fast // up to 16 thread
 disk wget url --slow // set to 4 thread
 ```
 
-for thunk
+for chunk
 
-default thunk is 2097152 (2MB)
+default chunk is 2097152 (2MB)
 ```
 disk wget url --fat // set to 8MB
 disk wget url --thin // set to 256KB

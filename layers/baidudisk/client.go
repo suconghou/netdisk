@@ -431,9 +431,9 @@ func (bc *Bclient) FileInfo(p string, dlink bool) error {
 				b.WriteString("\n哈希块:" + v)
 			}
 		}
-		if dlink {
-			b.WriteString("\n下载地址:" + bc.GetDownloadURL(p))
-		}
+	}
+	if dlink {
+		b.WriteString("\n下载地址:" + bc.GetDownloadURL(p))
 	}
 	Log.Print(b.String())
 	return nil

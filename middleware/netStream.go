@@ -1,9 +1,13 @@
 package middleware
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"regexp"
+	"strings"
 
+	"github.com/suconghou/fastload/multiget"
 	"github.com/suconghou/netdisk/config"
 	"github.com/suconghou/netdisk/layers/baidudisk"
 	"github.com/suconghou/netdisk/util"
@@ -36,5 +40,31 @@ func info(w http.ResponseWriter, r *http.Request, match []string) error {
 func get(w http.ResponseWriter, r *http.Request, match []string) error {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(file)
-	return util.ProxyURL(w, r, url, nil)
+	url = strings.ReplaceAll(url, "qdall01.baidupcs.com", "qdcu02.baidupcs.com")
+	addr := map[string][]string{
+		"qdall01.baidupcs.com:80": []string{
+			"119.167.143.21:80",
+			"119.167.143.20:80",
+			"140.249.34.22:80",
+			"119.167.143.12:80",
+			"111.63.70.21:80",
+		},
+		"qdcu02.baidupcs.com": []string{
+			"119.167.143.21:80",
+			"119.167.143.20:80",
+			"140.249.34.22:80",
+			"119.167.143.12:80",
+			"111.63.70.21:80",
+		},
+	}
+	rr, size, err := multiget.NewDNS(url, 0, 40090163, addr)
+	fmt.Println(size)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(w, rr)
+	if err != nil {
+		return err
+	}
+	return nil
 }
