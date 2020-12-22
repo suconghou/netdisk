@@ -27,19 +27,19 @@ func NetStreamAPI(w http.ResponseWriter, r *http.Request, match []string) error 
 
 func ls(w http.ResponseWriter, r *http.Request, match []string) error {
 	file := match[1]
-	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).APILsURL(file)
+	url := baidudisk.NewClient(config.Cfg.Token, config.Cfg.Root).APILsURL(file)
 	return util.ProxyURL(w, r, url, nil)
 }
 
 func info(w http.ResponseWriter, r *http.Request, match []string) error {
 	file := match[1]
-	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).APIFileInfoURL(file)
+	url := baidudisk.NewClient(config.Cfg.Token, config.Cfg.Root).APIFileInfoURL(file)
 	return util.ProxyURL(w, r, url, nil)
 }
 
 func get(w http.ResponseWriter, r *http.Request, match []string) error {
 	file := match[1]
-	url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(file)
+	url := baidudisk.NewClient(config.Cfg.Token, config.Cfg.Root).GetDownloadURL(file)
 	url = strings.ReplaceAll(url, "qdall01.baidupcs.com", "qdcu02.baidupcs.com")
 	addr := map[string][]string{
 		"qdall01.baidupcs.com:80": []string{

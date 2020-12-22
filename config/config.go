@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
-	"os"
 	"runtime"
 )
 
@@ -17,12 +16,9 @@ const (
 
 // Appcfg config
 type appcfg struct {
-	Driver string
-	Pcs    struct {
-		Token string
-		Root  string
-		Path  string
-	}
+	Token string
+	Root  string
+	Path  string
 }
 
 // Cfg config the whole app
@@ -32,18 +28,14 @@ func init() {
 	if runtime.GOOS == "windows" {
 		configPath = `C:\Users\Default\disk.json`
 	}
+	// 即时没有配置文件,也允许运行
 	loadConfig()
 }
 
 func loadConfig() error {
 	strJSON, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			Cfg.Pcs.Root = "/apps/suconghou"
-			Cfg.Driver = "pcs"
-		} else {
-			return err
-		}
+		return err
 	}
 	return json.Unmarshal([]byte(strJSON), &Cfg)
 }
@@ -54,19 +46,4 @@ func (Cfg *appcfg) Save() error {
 		return err
 	}
 	return ioutil.WriteFile(configPath, strJSON, 0777)
-}
-
-// IsPcs return if its driver is pcs
-func IsPcs() bool {
-	if Cfg.Driver == "pcs" {
-		return true
-	}
-	return false
-}
-
-// Use change backend driver
-func Use(driver string) error {
-	Cfg.Driver = driver
-	Cfg.Save()
-	return nil
 }

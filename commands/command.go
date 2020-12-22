@@ -19,18 +19,6 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-// Use choose a backend
-func Use() {
-	if len(os.Args) == 3 {
-		err := config.Use(os.Args[2])
-		if err != nil {
-			util.Log.Printf("%v", err)
-		}
-	} else {
-		Pwd()
-	}
-}
-
 // Ls list files
 func Ls() {
 	var dir string
@@ -223,11 +211,6 @@ func Play() {
 	} else {
 		util.Log.Print("Usage:disk play filepath/url")
 	}
-}
-
-// Sync files
-func Sync() {
-
 }
 
 // Info print the backend info or file info

@@ -54,8 +54,6 @@ func main() {
 
 func cli() {
 	switch os.Args[1] {
-	case "use":
-		commands.Use()
 	case "ls":
 		commands.Ls()
 	case "cd":
@@ -76,8 +74,6 @@ func cli() {
 		commands.Put()
 	case "wget":
 		commands.Wget()
-	case "sync":
-		commands.Sync()
 	case "info":
 		commands.Info()
 	case "hash", "sha1", "sha1sum":
@@ -203,11 +199,11 @@ func configs(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			h := w.Header()
 			if token != "" {
-				h.Add("Token", config.Cfg.Pcs.Token)
+				h.Add("Token", config.Cfg.Token)
 			}
 		} else if r.Method == http.MethodPost {
 			if token != "" {
-				config.Cfg.Pcs.Token = token
+				config.Cfg.Token = token
 			}
 		}
 	}

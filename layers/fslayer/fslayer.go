@@ -11,46 +11,39 @@ import (
 	"github.com/suconghou/utilgo"
 )
 
+var client *baidudisk.Bclient
+
+func init() {
+	client = baidudisk.NewClient(config.Cfg.Token, config.Cfg.Root)
+}
+
 // Pwd print current path
 func Pwd() error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Pwd(config.Cfg.Pcs.Path)
-	}
-	return nil
+	return client.Pwd(config.Cfg.Path)
 }
 
 // GetInfo current backend info
 func GetInfo() error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Info()
-	}
-	return nil
+	return client.Info()
 }
 
 // ListDir list files and dirs
 func ListDir(filePath string, keep bool) error {
-	if config.IsPcs() {
-		if filePath == "" {
-			filePath = config.Cfg.Pcs.Path
-		}
-		err := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Ls(filePath)
-		if keep && err == nil && filePath != config.Cfg.Pcs.Path {
-			config.Cfg.Pcs.Path = filePath
-			config.Cfg.Save()
-		}
-		return err
+	if filePath == "" {
+		filePath = config.Cfg.Path
 	}
-	return nil
+	err := client.Ls(filePath)
+	if keep && err == nil && filePath != config.Cfg.Path {
+		config.Cfg.Path = filePath
+		config.Cfg.Save()
+	}
+	return err
 }
 
 // Get file form backend
 func Get(filePath string, saveas string, transport *http.Transport) error {
-	if config.IsPcs() {
-		url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(filePath)
-		return WgetURL(url, saveas, transport)
-	}
-	// 腾讯云 cos
-	return nil
+	url := client.GetDownloadURL(filePath)
+	return WgetURL(url, saveas, transport)
 }
 
 // WgetURL download a url file
@@ -65,11 +58,8 @@ func WgetURL(url string, saveas string, transport *http.Transport) error {
 
 // Play play a backend file
 func Play(filePath string, saveas string, stdout bool, transport *http.Transport) error {
-	if config.IsPcs() {
-		url := baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).GetDownloadURL(filePath)
-		return PlayURL(url, saveas, stdout, transport)
-	}
-	return nil
+	url := client.GetDownloadURL(filePath)
+	return PlayURL(url, saveas, stdout, transport)
 }
 
 // PlayURL play a url media
@@ -102,18 +92,12 @@ func PlayURL(url string, saveas string, stdout bool, transport *http.Transport) 
 
 // GetFileInfo print file info
 func GetFileInfo(filePath string, dlink bool) error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).FileInfo(filePath, dlink)
-	}
-	return nil
+	return client.FileInfo(filePath, dlink)
 }
 
 // Put upload data to backend
 func Put(savePath string, overwrite bool, file *os.File) error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Put(savePath, overwrite, file)
-	}
-	return nil
+	return client.Put(savePath, overwrite, file)
 }
 
 // PutFile upload files to backend
@@ -128,80 +112,50 @@ func PutFileRapid(filePath string, savePath string, fileSize uint64, ondup strin
 
 // Mkdir create dir
 func Mkdir(path string) error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Mkdir(path)
-	}
-	return nil
+	return client.Mkdir(path)
 }
 
 // DeleteFile delete files
 func DeleteFile(fileName string) error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Rm(fileName)
-	}
-	return nil
+	return client.Rm(fileName)
 }
 
 // MoveFile move file
 func MoveFile(source string, target string) error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Mv(source, target)
-	}
-	return nil
+	return client.Mv(source, target)
 }
 
 // CopyFile copy files
 func CopyFile(source string, target string) error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Cp(source, target)
-	}
-	return nil
+	return client.Cp(source, target)
 }
 
 // SearchFile search files
 func SearchFile(fileName string) error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Search(fileName)
-	}
-	return nil
+	return client.Search(fileName)
 }
 
 // Empty clear
 func Empty() error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).Clear()
-	}
-	return nil
+	return client.Clear()
 }
 
 // GetTaskList print task list
 func GetTaskList() error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).TaskList()
-	}
-	return nil
+	return client.TaskList()
 }
 
 // AddTask add a task
 func AddTask(savePath string, sourceURL string) error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).TaskAdd(savePath, sourceURL)
-	}
-	return nil
+	return client.TaskAdd(savePath, sourceURL)
 }
 
 // RemoveTask remove a task
 func RemoveTask(id string) error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).TaskRemove(id)
-	}
-	return nil
+	return client.TaskRemove(id)
 }
 
 // GetTaskInfo print one task info
 func GetTaskInfo(ids string) error {
-	if config.IsPcs() {
-		return baidudisk.NewClient(config.Cfg.Pcs.Token, config.Cfg.Pcs.Root).TaskInfo(ids)
-	}
-	return nil
+	return client.TaskInfo(ids)
 }
