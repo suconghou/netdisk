@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"runtime"
 )
 
@@ -33,7 +33,7 @@ func init() {
 }
 
 func loadConfig() error {
-	strJSON, err := ioutil.ReadFile(configPath)
+	strJSON, err := os.ReadFile(configPath)
 	if err != nil {
 		return err
 	}
@@ -45,5 +45,5 @@ func (Cfg *appcfg) Save() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(configPath, strJSON, 0777)
+	return os.WriteFile(configPath, strJSON, 0777)
 }
