@@ -41,7 +41,7 @@ func ProxyURL(w http.ResponseWriter, r *http.Request, target string, headers htt
 	var (
 		reqHeader = http.Header{}
 	)
-	req, err := http.NewRequest(r.Method, target, r.Body)
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, target, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return err
