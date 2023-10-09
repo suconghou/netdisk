@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/suconghou/netdisk/config"
 	"github.com/suconghou/netdisk/layers/fslayer"
@@ -394,7 +396,19 @@ func HTTPProxy() {
 		header      string
 		ferr        flag.ErrorHandling
 		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
-		transport   *http.Transport
+		transport   = &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+		}
 	)
 	CommandLine.IntVar(&port, "p", 8123, "listen port")
 	CommandLine.StringVar(&url, "u", "http://127.0.0.1:8080", "reverse url")
