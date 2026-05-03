@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -94,10 +95,10 @@ func (bc *Bclient) Ls(p string) error {
 		size := item.Get("size").MustUint64()
 		total = total + size
 		b.WriteString("\n")
-		b.WriteString(fmt.Sprintf("%-22s", utilgo.DateFormat(item.Get("ctime").MustInt64())))
-		b.WriteString(fmt.Sprintf("%-22s", utilgo.DateFormat(item.Get("mtime").MustInt64())))
-		b.WriteString(fmt.Sprintf("%-10s", utilgo.ByteFormat(size)))
-		b.WriteString(fmt.Sprintf("%-20s", item.Get("path").MustString()))
+		fmt.Fprintf(&b, "%-22s", utilgo.DateFormat(item.Get("ctime").MustInt64()))
+		fmt.Fprintf(&b, "%-22s", utilgo.DateFormat(item.Get("mtime").MustInt64()))
+		fmt.Fprintf(&b, "%-10s", utilgo.ByteFormat(size))
+		fmt.Fprintf(&b, "%-20s", item.Get("path").MustString())
 	}
 	Log.Printf("%s%s", name+bc.root+"  ➜  "+p+" "+utilgo.ByteFormat(total), b.String())
 	return nil
@@ -131,7 +132,7 @@ func (bc *Bclient) Mkdir(p string) error {
 	}
 	errMsg := js.Get("error_msg").MustString()
 	if errMsg != "" {
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 	Log.Printf("%s\n已创建 %s", name+bc.root, p)
 	return nil
@@ -159,7 +160,7 @@ func (bc *Bclient) Mv(source string, target string) error {
 	}
 	errMsg := js.Get("error_msg").MustString()
 	if errMsg != "" {
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 	Log.Printf("%s\n%s 已移动至 %s", name+bc.root, source, target)
 	return nil
@@ -187,7 +188,7 @@ func (bc *Bclient) Cp(source string, target string) error {
 	}
 	errMsg := js.Get("error_msg").MustString()
 	if errMsg != "" {
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 	Log.Printf("%s\n%s 已复制至 %s", name+bc.root, source, target)
 	return nil
@@ -215,7 +216,7 @@ func (bc *Bclient) Rm(file string) error {
 	}
 	errMsg := js.Get("error_msg").MustString()
 	if errMsg != "" {
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 	Log.Printf("%s\n%s 已删除", name+bc.root, file)
 	return nil
@@ -257,6 +258,9 @@ func (bc *Bclient) GetDownloadURL(file string) string {
 // Put upload files may use rapid upload
 func (bc *Bclient) Put(savePath string, overwrite bool, file *os.File) error {
 	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
 	var (
 		size = info.Size()
 	)
@@ -274,9 +278,9 @@ func (bc *Bclient) Put(savePath string, overwrite bool, file *os.File) error {
 	}
 	errMsg := js.Get("error_msg").MustString()
 	if errMsg != "" {
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
-	Log.Print(fmt.Sprintf("%s %s %d\n已上传", js.Get("path").MustString(), js.Get("md5").MustString(), js.Get("size").MustInt()))
+	Log.Printf("%s %s %d\n已上传", js.Get("path").MustString(), js.Get("md5").MustString(), js.Get("size").MustInt())
 	return nil
 }
 
@@ -304,7 +308,9 @@ func (bc *Bclient) APIPut(savePath string, overwrite bool, file *os.File, filesi
 	if err != nil {
 		return nil, err
 	}
-	bodyWriter.Close()
+	if err = bodyWriter.Close(); err != nil {
+		return nil, err
+	}
 	if progress != nil {
 		r = &counter{origin: bodyBuf, total: int64(bodyBuf.Len()), progress: progress}
 	} else {
@@ -325,7 +331,7 @@ func (bc *Bclient) RapidPut(file *os.File, savePath string, overwrite bool) (str
 	}
 	errMsg := js.Get("error_msg").MustString()
 	if errMsg != "" {
-		return contentMd5, contentCrc32, sliceMd5, fmt.Errorf(errMsg)
+		return contentMd5, contentCrc32, sliceMd5, errors.New(errMsg)
 	}
 	return contentMd5, contentCrc32, sliceMd5, nil
 }
@@ -357,7 +363,10 @@ func (bc *Bclient) APIRapidPut(file *os.File, savePath string, overwrite bool) (
 	}
 	contentCrc32 := hex.EncodeToString(crc32byte)
 	slice := make([]byte, 262144)
-	file.ReadAt(slice, 0)
+	_, err = file.ReadAt(slice, 0)
+	if err != nil {
+		return "", "", "", nil, err
+	}
 	sliceMd5 := fmt.Sprintf("%x", md5.Sum(slice))
 	body, err := utilgo.PostContent(bc.APIRapidPutURL(savePath, fileSize, contentMd5, sliceMd5, contentCrc32, overwrite), "application/x-www-form-urlencoded", nil, nil)
 	defer file.Seek(0, 0)
@@ -379,7 +388,7 @@ func (bc *Bclient) Info() error {
 	used := js.Get("used").MustUint64()
 	b.WriteString(name + "\n总大小:" + utilgo.ByteFormat(quota))
 	b.WriteString("\n已使用:" + utilgo.ByteFormat(used))
-	b.WriteString(fmt.Sprintf("\n利用率:%.1f%%", float32(used)/float32(quota)*100))
+	fmt.Fprintf(&b, "\n利用率:%.1f%%", float32(used)/float32(quota)*100)
 	Log.Print(b.String())
 	return nil
 }
@@ -406,14 +415,14 @@ func (bc *Bclient) FileInfo(p string, dlink bool) error {
 	}
 	errMsg := js.Get("error_msg").MustString()
 	if errMsg != "" {
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 	b := bytes.Buffer{}
 	item := js.Get("list").GetIndex(0)
 	b.WriteString(name + item.Get("path").MustString())
 	b.WriteString("\n文件类型:" + utilgo.BoolString(item.Get("isdir").MustInt() == 0, "文件", "文件夹"))
 	b.WriteString("\n文件大小:" + utilgo.ByteFormat(item.Get("size").MustUint64()))
-	b.WriteString(fmt.Sprintf("\n文件字节:%d\n文件标识:%d", item.Get("size").MustInt64(), item.Get("fs_id").MustInt64()))
+	fmt.Fprintf(&b, "\n文件字节:%d\n文件标识:%d", item.Get("size").MustInt64(), item.Get("fs_id").MustInt64())
 	b.WriteString("\n创建时间:" + utilgo.DateFormat(item.Get("ctime").MustInt64()))
 	b.WriteString("\n修改时间:" + utilgo.DateFormat(item.Get("mtime").MustInt64()))
 	blockstr := item.Get("block_list").MustString()
@@ -466,10 +475,10 @@ func (bc *Bclient) Search(fileName string) error {
 		size := item.Get("size").MustUint64()
 		total = total + size
 		b.WriteString("\n")
-		b.WriteString(fmt.Sprintf("%-22s", utilgo.DateFormat(item.Get("ctime").MustInt64())))
-		b.WriteString(fmt.Sprintf("%-22s", utilgo.DateFormat(item.Get("mtime").MustInt64())))
-		b.WriteString(fmt.Sprintf("%-10s", utilgo.ByteFormat(size)))
-		b.WriteString(fmt.Sprintf("%-20s", item.Get("path").MustString()))
+		fmt.Fprintf(&b, "%-22s", utilgo.DateFormat(item.Get("ctime").MustInt64()))
+		fmt.Fprintf(&b, "%-22s", utilgo.DateFormat(item.Get("mtime").MustInt64()))
+		fmt.Fprintf(&b, "%-10s", utilgo.ByteFormat(size))
+		fmt.Fprintf(&b, "%-20s", item.Get("path").MustString())
 	}
 	Log.Printf("%s\n%s", name+bc.root+"  ➜  搜索["+fileName+"] "+utilgo.ByteFormat(total), b.String())
 	return nil
@@ -497,13 +506,13 @@ func (bc *Bclient) TaskAdd(savePath string, url string) error {
 	}
 	errMsg := js.Get("error_msg").MustString()
 	if errMsg != "" {
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 	id := js.Get("task_id").MustInt()
 	Log.Printf("任务ID %d\n", id)
 	if js.Get("rapid_download").MustInt() == 1 {
 		Log.Print("离线已秒杀")
-		bc.TaskInfo(strconv.Itoa(id))
+		return bc.TaskInfo(strconv.Itoa(id))
 	}
 	return nil
 }
@@ -539,7 +548,7 @@ func (bc *Bclient) TaskList() error {
 		status := showTaskStatus(item.Get("status").MustString())
 		sourceURL := item.Get("source_url").MustString()
 		savePath := item.Get("save_path").MustString()
-		b.WriteString(fmt.Sprintf("\n任务ID:%s\n任务名称:%s\n创建时间:%s\n任务状态:%s\n源地址:%s \n存储至:%s\n", id, name, createTime, status, sourceURL, savePath))
+		fmt.Fprintf(&b, "\n任务ID:%s\n任务名称:%s\n创建时间:%s\n任务状态:%s\n源地址:%s \n存储至:%s\n", id, name, createTime, status, sourceURL, savePath)
 	}
 	Log.Printf("%s%s  ➜  离线任务: %d个任务 %s", name, bc.root, js.Get("total").MustInt(), b.String())
 	return nil
@@ -567,7 +576,7 @@ func (bc *Bclient) TaskInfo(ids string) error {
 	}
 	errMsg := js.Get("error_msg").MustString()
 	if errMsg != "" {
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 	b := bytes.Buffer{}
 	timestamp := time.Now().Unix()
@@ -577,23 +586,23 @@ func (bc *Bclient) TaskInfo(ids string) error {
 		status := showTaskStatus(item.Get("status").MustString())
 		createTime, _ := strconv.ParseInt(item.Get("create_time").MustString(), 10, 64)
 		startTime, _ := strconv.ParseInt(item.Get("create_time").MustString(), 10, 64)
-		b.WriteString(fmt.Sprintf("\n任务ID:%s\n任务名称:%s\n任务状态:%s\n创建时间:%s\n开始下载时间:%s\n", id, name, status, utilgo.DateFormat(createTime), utilgo.DateFormat(startTime)))
+		fmt.Fprintf(&b, "\n任务ID:%s\n任务名称:%s\n任务状态:%s\n创建时间:%s\n开始下载时间:%s\n", id, name, status, utilgo.DateFormat(createTime), utilgo.DateFormat(startTime))
 		fileSize, _ := strconv.ParseUint(item.Get("file_size").MustString(), 10, 64)
 		finishTime, _ := strconv.ParseInt(item.Get("finish_time").MustString(), 10, 64)
 		if fileSize > 0 { //已探测出文件大小
-			b.WriteString(fmt.Sprintf("大小:%d (%s)\n", fileSize, utilgo.ByteFormat(fileSize)))
+			fmt.Fprintf(&b, "大小:%d (%s)\n", fileSize, utilgo.ByteFormat(fileSize))
 			if finishTime > startTime { //已下载完毕
 				duration := finishTime - startTime
-				b.WriteString(fmt.Sprintf("任务完成时间:%s 耗时:%d秒 速度:%.2fKB/s \n", utilgo.DateFormat(finishTime), duration, float64(fileSize)/1024/float64(duration)))
+				fmt.Fprintf(&b, "任务完成时间:%s 耗时:%d秒 速度:%.2fKB/s \n", utilgo.DateFormat(finishTime), duration, float64(fileSize)/1024/float64(duration))
 			} else if finishTime > 0 && finishTime == startTime {
-				b.WriteString(fmt.Sprintf("任务完成时间:%s 云端已秒杀 \n", utilgo.DateFormat(finishTime)))
+				fmt.Fprintf(&b, "任务完成时间:%s 云端已秒杀 \n", utilgo.DateFormat(finishTime))
 			} else {
 				finishedSize, _ := strconv.ParseUint(item.Get("finished_size").MustString(), 10, 64)
 				duration := int64(timestamp) - startTime
-				b.WriteString(fmt.Sprintf("已下载:%s 进度:%.1f%% 速度:%.2fKB/s\n", utilgo.ByteFormat(finishedSize), float64(finishedSize)/float64(fileSize)*100, float64(finishedSize)/1024/float64(duration)))
+				fmt.Fprintf(&b, "已下载:%s 进度:%.1f%% 速度:%.2fKB/s\n", utilgo.ByteFormat(finishedSize), float64(finishedSize)/float64(fileSize)*100, float64(finishedSize)/1024/float64(duration))
 			}
 		}
-		b.WriteString(fmt.Sprintf("原地址:%s\n存储至:%s\n", item.Get("source_url").MustString(), item.Get("save_path").MustString()))
+		fmt.Fprintf(&b, "原地址:%s\n存储至:%s\n", item.Get("source_url").MustString(), item.Get("save_path").MustString())
 	}
 	Log.Printf("%s%s  ➜  任务详情: %s", name, bc.root, b.String())
 	return nil
@@ -621,7 +630,7 @@ func (bc *Bclient) TaskRemove(id string) error {
 	}
 	errMsg := js.Get("error_msg").MustString()
 	if errMsg != "" {
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 	Log.Printf("已取消任务%s\n", id)
 	return nil
@@ -649,7 +658,7 @@ func (bc *Bclient) Clear() error {
 	}
 	errMsg := js.Get("error_msg").MustString()
 	if errMsg != "" {
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 	Log.Print("已清空回收站 " + strconv.Itoa(js.GetPath("extra.succnum").MustInt()) + "个项目被清除")
 	return nil

@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"netdisk/util"
+
 	"github.com/suconghou/fastload/fastload"
-	"github.com/suconghou/netdisk/util"
 	"github.com/suconghou/utilgo"
 )
 
 // HTTPProxy nginx like reverse proxy
-func HTTPProxy(port int, url string, transport *http.Transport, str string) error {
+func HTTPProxy(port int, url string, str string) error {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "OPTIONS" {
 			utilgo.CrossShare(w.Header(), r.Header, str)
@@ -18,12 +19,15 @@ func HTTPProxy(port int, url string, transport *http.Transport, str string) erro
 			return
 		}
 		requ := fmt.Sprintf("%s%s", url, r.RequestURI)
-		fastload.Pipe(w, r, requ, func(out *http.Header, res *http.Header, status int) int {
+		_, err := fastload.Pipe(w, r, requ, func(out *http.Header, res *http.Header, status int) int {
 			w.Header().Set("Cache-Control", "public, max-age=604800")
 			utilgo.CrossShare(w.Header(), r.Header, str)
 			util.Log.Printf("%d %s %s", status, r.Method, requ)
 			return status
-		}, 60, transport)
+		}, 60)
+		if err != nil {
+			util.Log.Print(err)
+		}
 	})
 	util.Log.Printf("Starting up on port %d\nProxy %s", port, url)
 	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)

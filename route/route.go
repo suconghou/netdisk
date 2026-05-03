@@ -2,14 +2,9 @@ package route
 
 import (
 	"net/http"
-	"net/url"
 	"regexp"
 
-	"github.com/suconghou/netdisk/middleware"
-)
-
-var (
-	apiv1, _ = url.Parse("http://api.suconghou.cn/")
+	"netdisk/middleware"
 )
 
 // 路由定义

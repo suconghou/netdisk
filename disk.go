@@ -11,11 +11,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/suconghou/netdisk/commands"
-	"github.com/suconghou/netdisk/config"
-	"github.com/suconghou/netdisk/middleware"
-	"github.com/suconghou/netdisk/route"
-	"github.com/suconghou/netdisk/util"
+	"netdisk/commands"
+	"netdisk/config"
+	"netdisk/middleware"
+	"netdisk/route"
+	"netdisk/util"
+
 	"github.com/suconghou/utilgo"
 )
 
@@ -96,16 +97,8 @@ func cli() {
 		commands.Empty()
 	case "serve":
 		commands.Serve()
-	case "proxy":
-		commands.Proxy()
 	case "reverse":
 		commands.HTTPProxy()
-	case "nc":
-		commands.Nc()
-	case "fwd":
-		commands.Fwd()
-	case "network":
-		commands.Network()
 	default:
 		commands.Usage()
 	}
@@ -150,14 +143,15 @@ func status(w http.ResponseWriter, r *http.Request) {
 	if bs, err := json.Marshal(&sysStatus); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
-		utilgo.JSONPut(w, bs, true, 60)
+		_, _ = utilgo.JSONPut(w, bs, true, 60)
 	}
 }
 
 func routeMatch(w http.ResponseWriter, r *http.Request) {
 	for _, p := range route.RoutePath {
-		if p.Reg.MatchString(r.URL.Path) {
-			if err := p.Handler(w, r, p.Reg.FindStringSubmatch(r.URL.Path)); err != nil {
+		matches := p.Reg.FindStringSubmatch(r.URL.Path)
+		if matches != nil {
+			if err := p.Handler(w, r, matches); err != nil {
 				util.Log.Print(err)
 			}
 			return
@@ -173,7 +167,7 @@ func fallback(w http.ResponseWriter, r *http.Request) {
 	}
 	if !tryFiles(files, w, r) {
 		if utilgo.IsURL(r.RequestURI, true) {
-			middleware.Proxy(w, r)
+			_ = middleware.Proxy(w, r)
 		} else {
 			http.NotFound(w, r)
 		}
@@ -196,12 +190,13 @@ func tryFiles(files []string, w http.ResponseWriter, r *http.Request) bool {
 func configs(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Auth") == os.Getenv("AUTH") {
 		token := r.Header.Get("Token")
-		if r.Method == http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
 			h := w.Header()
 			if token != "" {
 				h.Add("Token", config.Cfg.Token)
 			}
-		} else if r.Method == http.MethodPost {
+		case http.MethodPost:
 			if token != "" {
 				config.Cfg.Token = token
 			}

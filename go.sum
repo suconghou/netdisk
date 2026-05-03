@@ -1,0 +1,6 @@
+github.com/bitly/go-simplejson v0.5.1 h1:xgwPbetQScXt1gh9BmoJ6j9JMr3TElvuIyjR8pgdoow=
+github.com/bitly/go-simplejson v0.5.1/go.mod h1:YOPVLzCfwK14b4Sff3oP1AmGhI9T9Vsg84etUnlyp+Q=
+github.com/suconghou/fastload v0.0.0-20260503102057-768a83541a0d h1:5PdBRCwkc2umOisaVhbvpEJQfIq1NeTCXKmqrXMsu+M=
+github.com/suconghou/fastload v0.0.0-20260503102057-768a83541a0d/go.mod h1:9HqHS7FPHZ7jRgOAaSu2ZlKZE/bhiH7am10woeqPgsg=
+github.com/suconghou/utilgo v0.0.0-20211013130625-00cc18fdca42 h1:r7X8UXltR23h9qbPqDK4dnBRN3/T97GaU4smwZ1UFVc=
+github.com/suconghou/utilgo v0.0.0-20211013130625-00cc18fdca42/go.mod h1:xnrnPnQjSyM22WOdgCuHPZBzh0P/OaMr7P9XlLg7B/I=

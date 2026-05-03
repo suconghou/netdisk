@@ -166,12 +166,6 @@ play exist file but the remain data download to stdout to play
 `(cat a.flv && disk play /test/a.flv --stdout) | mpv -`
 
 
-## Proxy 
-
-`disk proxy` 
-
-`disk reverse`
-
 ### Reverse Proxy
 
 `disk reverse` start a reverse proxy server
@@ -186,21 +180,6 @@ it is like nginx reverse proxy , but can work with upstream proxy
 
 `-p` is the server port, default 8123
 
-#### Reverse Proxy With Upstream Proxy
-
-`-proxy` to use an upstream http(s) proxy
-
-> `-proxy http://your_http_proxy:6056` or `-proxy https://your_http_proxy:6056` 
-
-`-socks` to use an upstream socks5 proxy
-
-> `-socks 127.0.0.1:1080`
-
-**`-socks` is used if both proxy are configured**
-
-> if your proxy is only http_proxy proxy then you can only proxy http backend (no https backend) 
-
-
 
 ### Forward Proxy
 
@@ -210,31 +189,6 @@ it is like nginx reverse proxy , but can work with upstream proxy
 
 `-p` is the proxy server port, default 8123
 
-#### http(s) proxy
 
-`disk proxy` start the server can be used as a http proxy and https proxy server
-
-#### socks5 proxy
-
-`disk proxy` start the server can be used as a socks5 proxy server
-
-#### socks5 to http(s) proxy
-
-use `-socks` to set an upstream socks5 proxy
-
-which all the proxy request(http/https/socks5) will pass to 
-
-## Network
-
-
-`disk network` test download speed for given url 
-
-`echo http://xxx.com/filepath  | tdisk network -s 0 -t 10`  
-`-s 0` for unlimit filesize
-
-test for ip with one host 
-
-`disk network -host xxx.com -path /filepath`
-
-`-path` begin with `/`
+TODO 重构多线程下载器
 

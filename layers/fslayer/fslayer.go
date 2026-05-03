@@ -1,13 +1,14 @@
 package fslayer
 
 import (
+	"context"
 	"io"
-	"net/http"
 	"os"
 
+	"netdisk/config"
+	"netdisk/layers/baidudisk"
+
 	"github.com/suconghou/fastload/fastloader"
-	"github.com/suconghou/netdisk/config"
-	"github.com/suconghou/netdisk/layers/baidudisk"
 	"github.com/suconghou/utilgo"
 )
 
@@ -35,35 +36,35 @@ func ListDir(filePath string, keep bool) error {
 	err := client.Ls(filePath)
 	if keep && err == nil && filePath != config.Cfg.Path {
 		config.Cfg.Path = filePath
-		config.Cfg.Save()
+		return config.Cfg.Save()
 	}
 	return err
 }
 
 // Get file form backend
-func Get(filePath string, saveas string, transport *http.Transport) error {
+func Get(filePath string, saveas string) error {
 	url := client.GetDownloadURL(filePath)
-	return WgetURL(url, saveas, transport)
-}
-
-// WgetURL download a url file
-func WgetURL(url string, saveas string, transport *http.Transport) error {
 	file, fstart, err := utilgo.GetContinue(saveas)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	return fastloader.Load(file, map[string]int{url: 1}, 8, 1048576, fstart, 0, nil, transport, os.Stdout, nil)
+	return fastloader.Load(context.Background(), file, map[string]int{url: 1}, 8, 1048576, fstart, 0, nil, os.Stdout, nil)
+}
+
+// WgetURL download a url file
+func WgetURL(args []string) error {
+	return fastloader.Get(args)
 }
 
 // Play play a backend file
-func Play(filePath string, saveas string, stdout bool, transport *http.Transport) error {
+func Play(filePath string, saveas string, stdout bool) error {
 	url := client.GetDownloadURL(filePath)
-	return PlayURL(url, saveas, stdout, transport)
+	return PlayURL(url, saveas, stdout)
 }
 
 // PlayURL play a url media
-func PlayURL(url string, saveas string, stdout bool, transport *http.Transport) error {
+func PlayURL(url string, saveas string, stdout bool) error {
 	var (
 		file   *os.File
 		err    error
@@ -87,7 +88,7 @@ func PlayURL(url string, saveas string, stdout bool, transport *http.Transport) 
 		}
 	}
 	defer file.Close()
-	return fastloader.Load(file, map[string]int{url: 1}, 8, 1048576, fstart, 0, nil, transport, writer, hook)
+	return fastloader.Load(context.Background(), file, map[string]int{url: 1}, 8, 1048576, fstart, 0, nil, writer, hook)
 }
 
 // GetFileInfo print file info

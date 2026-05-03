@@ -2,23 +2,19 @@ package config
 
 import (
 	"encoding/json"
+	"netdisk/util"
 	"os"
 	"runtime"
 )
 
 var configPath = "/etc/disk.json"
 
-// Version and ReleaseURL
-const (
-	Version    = "0.1.4"
-	ReleaseURL = "https://github.com/suconghou/netdisk"
-)
-
 // Appcfg config
 type appcfg struct {
 	Token string
 	Root  string
 	Path  string
+	Hosts []string
 }
 
 // Cfg config the whole app
@@ -29,7 +25,9 @@ func init() {
 		configPath = `C:\Users\Default\disk.json`
 	}
 	// 即时没有配置文件,也允许运行
-	loadConfig()
+	if err := loadConfig(); err != nil {
+		util.Log.Fatalln(err)
+	}
 }
 
 func loadConfig() error {

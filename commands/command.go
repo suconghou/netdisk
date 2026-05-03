@@ -1,24 +1,19 @@
 package commands
 
 import (
-	"crypto/tls"
 	"flag"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
-	"github.com/suconghou/netdisk/config"
-	"github.com/suconghou/netdisk/layers/fslayer"
-	"github.com/suconghou/netdisk/middleware"
-	"github.com/suconghou/netdisk/tools"
-	"github.com/suconghou/netdisk/util"
+	"netdisk/layers/fslayer"
+	"netdisk/tools"
+	"netdisk/util"
+
 	"github.com/suconghou/utilgo"
-	"golang.org/x/net/proxy"
 )
 
 // Ls list files
@@ -111,12 +106,7 @@ func Get() {
 			util.Log.Print(err)
 			return
 		}
-		transport, err := util.GetProxy()
-		if err != nil {
-			util.Log.Print(err)
-			return
-		}
-		err = fslayer.Get(os.Args[2], saveas, transport)
+		err = fslayer.Get(os.Args[2], saveas)
 		if err != nil {
 			util.Log.Print(err)
 		}
@@ -155,23 +145,8 @@ func Put() {
 
 // Wget url like wget
 func Wget() {
-	if len(os.Args) >= 3 && utilgo.IsURL(os.Args[2], true) {
-		var (
-			saveas, err = utilgo.GetStorePath(os.Args[2])
-		)
-		if err != nil {
-			util.Log.Print(err)
-			return
-		}
-		transport, err := util.GetProxy()
-		if err != nil {
-			util.Log.Print(err)
-			return
-		}
-		err = fslayer.WgetURL(os.Args[2], saveas, transport)
-		if err != nil {
-			util.Log.Print(err)
-		}
+	if len(os.Args) >= 3 {
+		util.LE(fslayer.WgetURL(os.Args[2:]))
 	} else {
 		util.Log.Print("Usage:disk wget url")
 	}
@@ -193,19 +168,14 @@ func Play() {
 			util.Log.Print(err)
 			return
 		}
-		transport, err := util.GetProxy()
-		if err != nil {
-			util.Log.Print(err)
-			return
-		}
 		util.Log.Print("Playing " + saveas)
 		if utilgo.IsURL(os.Args[2], true) {
-			err = fslayer.PlayURL(os.Args[2], saveas, stdout, transport)
+			err = fslayer.PlayURL(os.Args[2], saveas, stdout)
 			if err != nil {
 				util.Log.Print(err)
 			}
 		} else {
-			err = fslayer.Play(os.Args[2], saveas, stdout, transport)
+			err = fslayer.Play(os.Args[2], saveas, stdout)
 			if err != nil {
 				util.Log.Print(err)
 			}
@@ -284,16 +254,13 @@ func Task() {
 // Search form the backend
 func Search() {
 	if len(os.Args) == 3 {
-		err := fslayer.SearchFile(os.Args[2])
-		if err != nil {
-			util.Log.Print(err)
-		}
+		util.LE(fslayer.SearchFile(os.Args[2]))
 	}
 }
 
 // Empty clear cache data
 func Empty() {
-	fslayer.Empty()
+	util.LE(fslayer.Empty())
 }
 
 // Serve start a http file server
@@ -333,170 +300,28 @@ func Serve() {
 	}
 }
 
-// Proxy enable a socks proxy server
-func Proxy() {
-	var (
-		port        int
-		socks       string
-		ferr        flag.ErrorHandling
-		l           net.Listener
-		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
-		dialer      = proxy.FromEnvironment()
-		d           proxy.Dialer
-	)
-	CommandLine.IntVar(&port, "p", 8123, "listen port")
-	CommandLine.StringVar(&socks, "socks", "", "socks proxy")
-	err := CommandLine.Parse(os.Args[2:])
-	if err == nil {
-		if socks != "" {
-			d, err = proxy.SOCKS5("tcp", socks, nil, proxy.Direct)
-			if err == nil {
-				dialer = d
-			}
-		}
-		if err != nil {
-			util.Log.Print(err)
-			return
-		}
-		util.Log.Printf("Starting up on port %d", port)
-		l, err = net.Listen("tcp", ":"+strconv.Itoa(port))
-		if err == nil {
-			for {
-				client, err := l.Accept()
-				if err == nil {
-					go func() {
-						defer func() {
-							if err := recover(); err != nil {
-								util.Log.Print(err)
-							}
-						}()
-						err := middleware.ProxySocks(client, dialer)
-						if err != nil && err != io.EOF {
-							util.Log.Print(err)
-						}
-					}()
-				} else {
-					util.Log.Print(err)
-				}
-			}
-		}
-	}
-	if err != nil {
-		util.Log.Print(err)
-	}
-}
-
 // HTTPProxy is a http reverse proxy like nginx but can use given upstream
 func HTTPProxy() {
 	var (
 		port        int
 		url         string
-		proxy       string
-		socks       string
 		header      string
 		ferr        flag.ErrorHandling
 		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
-		transport   = &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).DialContext,
-			ForceAttemptHTTP2:     true,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-		}
 	)
 	CommandLine.IntVar(&port, "p", 8123, "listen port")
 	CommandLine.StringVar(&url, "u", "http://127.0.0.1:8080", "reverse url")
-	CommandLine.StringVar(&proxy, "proxy", "", "http proxy")
-	CommandLine.StringVar(&socks, "socks", "", "socks proxy")
 	CommandLine.StringVar(&header, "header", "", "allow headers")
 	err := CommandLine.Parse(os.Args[2:])
 	if err == nil {
-		if socks != "" {
-			transport, err = util.MakeSocksProxy(socks, util.GetTLSConfig())
-		} else if proxy != "" {
-			transport, err = util.MakeHTTPProxy(proxy, util.GetTLSConfig())
-		}
-		if err == nil {
-			err = tools.HTTPProxy(port, url, transport, header)
-		}
+		err = tools.HTTPProxy(port, url, header)
 	}
 	if err != nil {
 		util.Log.Print(err)
 	}
-}
-
-// Nc like but have progress bar
-func Nc() {
-	err := tools.NcMain()
-	if err != nil {
-		util.Debug.Printf("nc error:%s", err)
-	}
-}
-
-// Fwd port forward
-func Fwd() {
-	err := tools.FwdMain()
-	if err != nil {
-		util.Debug.Printf("fwd error:%s", err)
-	}
-}
-
-// Network test http speed
-func Network() {
-	var (
-		chunk       uint
-		timeout     uint
-		input       string
-		proxy       string
-		socks       string
-		host        string
-		path        string
-		https       bool
-		ferr        flag.ErrorHandling
-		CommandLine = flag.NewFlagSet(os.Args[1], ferr)
-		transport   *http.Transport
-	)
-	CommandLine.UintVar(&chunk, "s", 256, "chunk size")
-	CommandLine.UintVar(&timeout, "t", 15, "timeout")
-	CommandLine.StringVar(&input, "i", "-", "input file")
-	CommandLine.StringVar(&proxy, "proxy", "", "http proxy")
-	CommandLine.StringVar(&socks, "socks", "", "socks proxy")
-	CommandLine.StringVar(&host, "host", "", "http host")
-	CommandLine.StringVar(&path, "path", "", "http path")
-	CommandLine.BoolVar(&https, "https", false, "use https")
-
-	err := CommandLine.Parse(os.Args[2:])
-	if err == nil {
-		if socks != "" {
-			transport, err = util.MakeSocksProxy(socks, util.GetTLSConfig())
-		} else if proxy != "" {
-			transport, err = util.MakeHTTPProxy(proxy, util.GetTLSConfig())
-		}
-		if err == nil {
-			if host == "" {
-				err = tools.SpeedTest(input, chunk, timeout, transport)
-			} else {
-				err = tools.SpeedTestWithHost(input, host, path, https, chunk, timeout, transport)
-			}
-		}
-	}
-	if err != nil {
-		util.Log.Print(err)
-	}
-
 }
 
 // Usage print help message
 func Usage() {
-	if len(os.Args) > 1 && os.Args[1] == "-v" {
-		util.Log.Print(os.Args[0] + " version: disk/" + config.Version + "\n" + config.ReleaseURL)
-	} else {
-		Help()
-	}
+	Help()
 }
