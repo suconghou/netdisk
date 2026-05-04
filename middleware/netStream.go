@@ -37,10 +37,10 @@ func info(w http.ResponseWriter, r *http.Request, match []string) error {
 	return util.ProxyURL(w, r, url, nil)
 }
 
-func get(w http.ResponseWriter, _ *http.Request, match []string) error {
+func get(w http.ResponseWriter, r *http.Request, match []string) error {
 	file := match[1]
 	url := baidudisk.NewClient(config.Cfg.Token, config.Cfg.Root).GetDownloadURL(file)
-	rr, size, err := multiget.Get(url, 0, 0, config.Cfg.Hosts)
+	rr, size, err := multiget.Get(r.Context(), url, 0, 0, config.Cfg.Hosts)
 	fmt.Println(size)
 	if err != nil {
 		return err
